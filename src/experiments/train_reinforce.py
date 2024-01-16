@@ -1,4 +1,4 @@
-from src.environments import pgg_reputation_v0 
+from src.environments import mo_epgg_v0 
 from src.algos.MOReinforce import MOReinforce
 from src.algos.Reinforce import Reinforce
 import numpy as np
@@ -127,7 +127,7 @@ def objective(args, repo_name, trial=None):
     print("config=", config)
 
     # define env
-    parallel_env = pgg_reputation_v0.parallel_env(config)
+    parallel_env = mo_epgg_v0.parallel_env(config)
 
     # define agents
     agents = define_agents(config)
@@ -149,12 +149,11 @@ def objective(args, repo_name, trial=None):
         parallel_env.set_active_agents(active_agents_idxs)
 
         # TRAIN
-        for i in range(config.num_episodes_per_epoch):
-            interaction_loop(config, parallel_env, active_agents, active_agents_idxs, social_norm, _eval=False)
+        interaction_loop(config, parallel_env, active_agents, active_agents_idxs, social_norm, _eval=False)
 
         # update agents
         losses = {}
-        print("UPDATE")
+        #print("UPDATE")
         for ag_idx, agent in active_agents.items():
             if (agent.is_dummy == True): 
                 losses[ag_idx] = agent.update()

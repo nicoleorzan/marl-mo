@@ -16,7 +16,6 @@ def setup_training_hyperparams(args, trial):
         n_agents = args.n_agents,
         mult_fact = args.mult_fact,
         num_epochs = args.num_epochs,
-        num_episodes_per_epoch = args.num_episodes_per_epoch,
         num_game_iterations = args.num_game_iterations,
         num_objectives = args.num_objectives,
         uncertainties = args.uncertainties,

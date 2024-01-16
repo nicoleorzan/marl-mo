@@ -12,12 +12,12 @@ class ExperienceReplayMemory:
         self.reset()
         
     def reset(self):
-        self._states = torch.empty((self.config.num_game_iterations*self.config.num_episodes_per_epoch,1))
-        self._actions = torch.empty((self.config.num_game_iterations*self.config.num_episodes_per_epoch,1))
-        self._rewards = torch.empty((self.config.num_game_iterations*self.config.num_episodes_per_epoch,self.config.num_objectives))
-        self._logprobs = torch.empty((self.config.num_game_iterations*self.config.num_episodes_per_epoch,1))
-        self._next_states = torch.empty((self.config.num_game_iterations*self.config.num_episodes_per_epoch,1))
-        self._dones = torch.empty((self.config.num_game_iterations*self.config.num_episodes_per_epoch,1), dtype=torch.bool)
+        self._states = torch.empty((self.config.num_game_iterations,1))
+        self._actions = torch.empty((self.config.num_game_iterations,1))
+        self._rewards = torch.empty((self.config.num_game_iterations,self.config.num_objectives))
+        self._logprobs = torch.empty((self.config.num_game_iterations,1))
+        self._next_states = torch.empty((self.config.num_game_iterations,1))
+        self._dones = torch.empty((self.config.num_game_iterations,1), dtype=torch.bool)
         self.i = 0
 
     def __len__(self):

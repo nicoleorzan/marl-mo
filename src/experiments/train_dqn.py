@@ -1,4 +1,4 @@
-from src.environments import pgg_reputation_v0
+from src.environments import mo_epgg_v0
 from src.algos.DQN import DQN
 import numpy as np
 import optuna
@@ -121,7 +121,7 @@ def objective(args, repo_name, trial=None):
     print("config=", config)
 
     # define envupdate_
-    parallel_env = pgg_reputation_v0.parallel_env(config)
+    parallel_env = mo_epgg_v0.parallel_env(config)
 
     # define agents
     agents = define_agents(config)
