@@ -15,6 +15,7 @@ class ExperienceReplayMemory:
         self._states = torch.empty((self.config.num_game_iterations,1))
         self._actions = torch.empty((self.config.num_game_iterations,1))
         self._rewards = torch.empty((self.config.num_game_iterations,self.config.num_objectives))
+        self._acc_rewards = torch.empty((self.config.num_game_iterations,self.config.num_objectives))
         self._logprobs = torch.empty((self.config.num_game_iterations,1))
         self._next_states = torch.empty((self.config.num_game_iterations,1))
         self._dones = torch.empty((self.config.num_game_iterations,1), dtype=torch.bool)
@@ -36,7 +37,7 @@ class MOReinforce():
         else: 
             self.input_act = 2
 
-        if (self.num_objectives > 1): # I have to condition the state on te accrued rewards
+        if (self.num_objectives > 1): # I have to condition the state on the accrued rewards
             self.input_act = self.input_act + self.num_objectives
         print("input_act=", self.input_act)
 
@@ -75,7 +76,7 @@ class MOReinforce():
         #print(" self.state_act", self.state_act)
         if (self.num_objectives > 1):
             self.state_act = torch.cat((self.state_act, self.accrued_reward_observation),0)
-        #print(" self.state_act", self.state_act)
+            #print(" self.state_act cat", self.state_act)
         self.state_act = self.state_act.view(-1,self.input_act)
         #print(" self.state_act", self.state_act)
 
@@ -108,7 +109,7 @@ class MOReinforce():
         self.memory._rewards[self.memory.i] = r
         self.memory._logprobs[self.memory.i] = l
         self.memory.i += 1
-        self.accrued_reward_observation = self.accrued_reward_observation*self.gamma**self.memory.i
+        self.accrued_reward_observation += r*self.gamma**self.memory.i
 
     def read_distrib_no_reputation(self, possible_states, n_possible_states):
         dist = torch.full((n_possible_states,2),  0.)
@@ -154,9 +155,8 @@ class MOReinforce():
         return future_discounted_rewards
     
     def update_mo(self):
-        acc_rewards = self.compute_accrued_rewards()
-        fut_rewards = self.compute_future_discounted_rewards()
-        #returns = deque()
+        #acc_rewards = self.compute_accrued_rewards()
+        #fut_rewards = self.compute_future_discounted_rewards()
         policy_loss = []
         
         for i, log_prob in enumerate(self.memory._logprobs):
@@ -164,9 +164,13 @@ class MOReinforce():
             #print("fut_rewards[i]=", fut_rewards[i])
             #print("acc_rewards[i] + fut_rewards[i]*self.gamma**i=",acc_rewards[i] + fut_rewards[i]*self.gamma**i)
             if (self.utility == "linear"):
-                val = -log_prob * self.linear_utility(acc_rewards[i] + fut_rewards[i]*self.gamma**i)
+                #val = -log_prob * self.linear_utility(acc_rewards[i] + fut_rewards[i]*self.gamma**i)
+                #print("acc_rewards[i] + fut_rewards[i]*self.gamma**i=",acc_rewards[i] + fut_rewards[i]*self.gamma**i)
+                #print("self.accrued_reward_observation=", self.accrued_reward_observation)
+                val = -log_prob * self.linear_utility(self.accrued_reward_observation)
             if (self.utility == "prod"):
-                val = -log_prob * self.utility_mul(acc_rewards[i] + fut_rewards[i]*self.gamma**i)
+                #val = -log_prob * self.utility_mul(acc_rewards[i] + fut_rewards[i]*self.gamma**i)
+                val = -log_prob * self.utility_mul(self.accrued_reward_observation)
             #print("val=", val)
             policy_loss.append(val.reshape(1))
 
@@ -186,7 +190,7 @@ class MOReinforce():
         for r in list(self.memory._rewards)[::-1]:
             R = r + R*self.gamma
             returns.appendleft(R)
-        print("returns=", returns)
+        #print("returns=", returns)
 
         returns = torch.tensor(returns)
         baseline = torch.mean(returns)

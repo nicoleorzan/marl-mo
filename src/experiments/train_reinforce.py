@@ -51,7 +51,7 @@ def interaction_loop(config, parallel_env, active_agents, active_agents_idxs, so
                 next_states[idx_agent] = observations[idx_agent]
 
     done = False
-    for _ in range(config.num_game_iterations):
+    for i in range(config.num_game_iterations):
 
         # state
         actions = {}; states = next_states; logprobs = {}
@@ -101,12 +101,12 @@ def interaction_loop(config, parallel_env, active_agents, active_agents_idxs, so
                 else: 
                     next_states[idx_agent] = observations[idx_agent]
            
-        if (_eval == False):
-            # save iteration            
-            for ag_idx, agent in active_agents.items():
-                if (agent.is_dummy == False):
-                    agent.append_to_replay(states[ag_idx], actions[ag_idx], rewards[ag_idx], next_states[ag_idx], logprobs[ag_idx], done)
-                    agent.return_episode =+ rewards[ag_idx]
+        #if (_eval == False):
+        # save iteration            
+        for ag_idx, agent in active_agents.items():
+            if (agent.is_dummy == False):
+                agent.append_to_replay(states[ag_idx], actions[ag_idx], rewards[ag_idx], next_states[ag_idx], logprobs[ag_idx], done)
+                agent.return_episode =+ rewards[ag_idx]
 
         if done:
             if (_eval == True):
@@ -138,7 +138,7 @@ def objective(args, repo_name, trial=None):
     #### TRAINING LOOP
     coop_agents_mf = {}; rew_agents_mf = {}
     for epoch in range(config.num_epochs):
-        print("\n==========>Epoch=", epoch)
+        #print("\n==========>Epoch=", epoch)
 
         # pick a pair of agents
         active_agents_idxs = pick_agents_idxs(config)
@@ -153,7 +153,7 @@ def objective(args, repo_name, trial=None):
 
         # update agents
         losses = {}
-        #print("UPDATE")
+        #print("\n\nUPDATE")
         for ag_idx, agent in active_agents.items():
             if (agent.is_dummy == True): 
                 losses[ag_idx] = agent.update()
@@ -164,7 +164,9 @@ def objective(args, repo_name, trial=None):
                     losses[ag_idx] = agent.update_mo()
                
         # EVAL
+        #print("EVAL")
         for mf_input in config.mult_fact:
+            [agent.reset() for _, agent in active_agents.items()]
             avg_rew, avg_coop = interaction_loop(config, parallel_env, active_agents, active_agents_idxs, social_norm, True, mf_input)
             avg_coop_tot = torch.mean(torch.stack([cop_val for _, cop_val in avg_coop.items()]))
 
