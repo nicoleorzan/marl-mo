@@ -1,6 +1,5 @@
 from src.environments import mo_epgg_v0 
 from src.algos.MOReinforce import MOReinforce
-from src.algos.Reinforce import Reinforce
 import numpy as np
 import optuna
 from optuna.trial import TrialState
@@ -21,10 +20,7 @@ def define_agents(config):
     agents = {}
     for idx in range(config.n_agents):
         if (config.is_dummy[idx] == 0):
-            if (config.num_objectives == 1):
-                agents['agent_'+str(idx)] = MOReinforce(config, idx) 
-            else:
-                agents['agent_'+str(idx)] = MOReinforce(config, idx) 
+            agents['agent_'+str(idx)] = MOReinforce(config, idx) 
         else: 
             agents['agent_'+str(idx)] = NormativeAgent(config, idx)
     return agents
@@ -162,11 +158,7 @@ def objective(args, repo_name, trial=None):
             if (agent.is_dummy == True): 
                 losses[ag_idx] = agent.update()
             else:
-                if (config.num_objectives == 1):
-                    #losses[ag_idx] = agent.update_reward()
-                    losses[ag_idx] = agent.update()
-                else:
-                    losses[ag_idx] = agent.update_mo()
+                losses[ag_idx] = agent.update_mo()
                
         # EVAL
         if (float(epoch)%float(config.print_step) == 0.):
