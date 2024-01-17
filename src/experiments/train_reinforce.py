@@ -165,48 +165,49 @@ def objective(args, repo_name, trial=None):
                     losses[ag_idx] = agent.update_mo()
                
         # EVAL
-        #print("\nEVAL")
-        for mf_input in config.mult_fact:
-            [agent.reset() for _, agent in active_agents.items()]
-            avg_rew, avg_coop = interaction_loop(config, parallel_env, active_agents, active_agents_idxs, social_norm, True, mf_input)
-            avg_coop_tot = torch.mean(torch.stack([cop_val for _, cop_val in avg_coop.items()]))
+        if (float(epoch)%30. == 0.):
+            #print("\nEVAL")
+            for mf_input in config.mult_fact:
+                [agent.reset() for _, agent in active_agents.items()]
+                avg_rew, avg_coop = interaction_loop(config, parallel_env, active_agents, active_agents_idxs, social_norm, True, mf_input)
+                avg_coop_tot = torch.mean(torch.stack([cop_val for _, cop_val in avg_coop.items()]))
 
-            avg_rep = np.mean([agent.reputation[0] for _, agent in agents.items() if (agent.is_dummy == False)])
-            measure = avg_rep
-            coop_agents_mf[mf_input] = avg_coop
-            rew_agents_mf[mf_input] = avg_rew
+                avg_rep = np.mean([agent.reputation[0] for _, agent in agents.items() if (agent.is_dummy == False)])
+                measure = avg_rep
+                coop_agents_mf[mf_input] = avg_coop
+                rew_agents_mf[mf_input] = avg_rew
 
-        dff_coop_per_mf = dict(("avg_coop_mf"+str(mf), torch.mean(torch.stack([ag_coop for _, ag_coop in coop_agents_mf[mf].items()]))) for mf in config.mult_fact)
-        dff_rew_per_mf = dict(("avg_rew_mf"+str(mf), torch.mean(torch.stack([ag_coop for _, ag_coop in rew_agents_mf[mf].items()]))) for mf in config.mult_fact)
+            dff_coop_per_mf = dict(("avg_coop_mf"+str(mf), torch.mean(torch.stack([ag_coop for _, ag_coop in coop_agents_mf[mf].items()]))) for mf in config.mult_fact)
+            dff_rew_per_mf = dict(("avg_rew_mf"+str(mf), torch.mean(torch.stack([ag_coop for _, ag_coop in rew_agents_mf[mf].items()]))) for mf in config.mult_fact)
 
-        prob = {}
-        if (config.num_objectives == 1 ):
-            if (config.reputation_enabled == 0): 
-                for ag_idx, agent in agents.items():
-                    if (agent.is_dummy == False):
-                        if ag_idx not in prob:
-                            prob[ag_idx] = torch.zeros(len(config.mult_fact), 2) # mult fact, poss actions
-                            possible_states = torch.stack([torch.Tensor([mf]) for _, mf in enumerate(config.mult_fact)])
-                            prob[ag_idx] = agent.read_distrib_no_reputation(possible_states,len(config.mult_fact)).detach()
-            else:
-                possible_reputations = [0., 1.]
-                for ag_idx, agent in agents.items():
-                    if (agent.is_dummy == False):
-                        if ag_idx not in prob:
-                            prob[ag_idx] = torch.zeros(2, len(config.mult_fact), 2) # mult fact, poss rep, poss actions
-                        for rep in possible_reputations:
-                            possible_states = torch.stack([torch.Tensor([rep, mf]) for _, mf in enumerate(config.mult_fact)])
-                            prob[ag_idx][int(rep),:,:] = agent.read_distrib(possible_states,len(config.mult_fact)).detach()
-            stacked = torch.stack([val for _, val in prob.items()])
-            avg_distrib = torch.mean(stacked, dim=0)
+            prob = {}
+            if (config.num_objectives == 1 ):
+                if (config.reputation_enabled == 0): 
+                    for ag_idx, agent in agents.items():
+                        if (agent.is_dummy == False):
+                            if ag_idx not in prob:
+                                prob[ag_idx] = torch.zeros(len(config.mult_fact), 2) # mult fact, poss actions
+                                possible_states = torch.stack([torch.Tensor([mf]) for _, mf in enumerate(config.mult_fact)])
+                                prob[ag_idx] = agent.read_distrib_no_reputation(possible_states,len(config.mult_fact)).detach()
+                else:
+                    possible_reputations = [0., 1.]
+                    for ag_idx, agent in agents.items():
+                        if (agent.is_dummy == False):
+                            if ag_idx not in prob:
+                                prob[ag_idx] = torch.zeros(2, len(config.mult_fact), 2) # mult fact, poss rep, poss actions
+                            for rep in possible_reputations:
+                                possible_states = torch.stack([torch.Tensor([rep, mf]) for _, mf in enumerate(config.mult_fact)])
+                                prob[ag_idx][int(rep),:,:] = agent.read_distrib(possible_states,len(config.mult_fact)).detach()
+                stacked = torch.stack([val for _, val in prob.items()])
+                avg_distrib = torch.mean(stacked, dim=0)
 
-        if (config.optuna_):
-            trial.report(measure, epoch)
-            
-            if trial.should_prune():
-                print("is time to pruneee")
-                wandb.finish()
-                raise optuna.exceptions.TrialPruned()
+            if (config.optuna_):
+                trial.report(measure, epoch)
+                
+                if trial.should_prune():
+                    print("is time to pruneee")
+                    wandb.finish()
+                    raise optuna.exceptions.TrialPruned()
 
         if (config.wandb_mode == "online" and float(epoch)%30. == 0.):
             for ag_idx, agent in active_agents.items():
