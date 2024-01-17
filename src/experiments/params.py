@@ -33,7 +33,8 @@ def setup_training_hyperparams(args, trial):
         rule = args.rule,
         reputation_assignment = args.reputation_assignment,
         device = DEVICE,
-        utility = args.utility
+        utility = args.utility,
+        print_step = args.print_step
     )
 
     if (args.algorithm == "reinforce"):  
@@ -42,9 +43,8 @@ def setup_training_hyperparams(args, trial):
         obs_size = 2 # m factor and reputation
         algo_params = dict(
             obs_size = obs_size,
-            gamma = 0.99,
+            gamma = 0.999,
             chi = 0.001,
-            epsilon = 0.01,
             lr_actor = 0.01,
             n_hidden_act = num_hidden_a,
             hidden_size_act = hidden_size_a,

@@ -173,6 +173,7 @@ class MOReinforce():
                 #    print("rewards=", self.memory._rewards)
                 #    print("fut rewards last", fut_rewards[0])
                 #    print("self.accrued_reward_observation=", self.accrued_reward_observation)
+                #     print("utility=",self.linear_utility(self.accrued_reward_observation))
                 val = -log_prob * self.linear_utility(self.accrued_reward_observation)
             if (self.utility == "prod"):
                 #val = -log_prob * self.utility_mul(acc_rewards[i] + fut_rewards[i]*self.gamma**i)

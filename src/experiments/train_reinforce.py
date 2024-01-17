@@ -160,12 +160,13 @@ def objective(args, repo_name, trial=None):
                 losses[ag_idx] = agent.update()
             else:
                 if (config.num_objectives == 1):
-                    losses[ag_idx] = agent.update_reward()
+                    #losses[ag_idx] = agent.update_reward()
+                    losses[ag_idx] = agent.update()
                 else:
                     losses[ag_idx] = agent.update_mo()
                
         # EVAL
-        if (float(epoch)%30. == 0.):
+        if (float(epoch)%float(config.print_step) == 0.):
             #print("\nEVAL")
             for mf_input in config.mult_fact:
                 [agent.reset() for _, agent in active_agents.items()]
@@ -209,7 +210,7 @@ def objective(args, repo_name, trial=None):
                     wandb.finish()
                     raise optuna.exceptions.TrialPruned()
 
-        if (config.wandb_mode == "online" and float(epoch)%30. == 0.):
+        if (config.wandb_mode == "online" and float(epoch)%float(config.print_step) == 0.):
             for ag_idx, agent in active_agents.items():
                 if (agent.is_dummy == False):
                     df_avg_coop = {ag_idx+"avg_coop": avg_coop[ag_idx]}
@@ -257,7 +258,7 @@ def objective(args, repo_name, trial=None):
             wandb.log(dff,
                 step=epoch, commit=True)
 
-        if (epoch%10 == 0):
+        if (epoch%config.print_step == 0):
             print("\nEpoch : {} \t Measure: {} ".format(epoch, measure))
             print("avg_rew=", {ag_idx:avg_i for ag_idx, avg_i in avg_rew.items()})
             print("coop_agents_mf=",coop_agents_mf)
