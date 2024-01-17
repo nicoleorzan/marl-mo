@@ -149,6 +149,7 @@ def objective(args, repo_name, trial=None):
         parallel_env.set_active_agents(active_agents_idxs)
 
         # TRAIN
+        #print("\nTRAIN")
         interaction_loop(config, parallel_env, active_agents, active_agents_idxs, social_norm, _eval=False)
 
         # update agents
@@ -164,7 +165,7 @@ def objective(args, repo_name, trial=None):
                     losses[ag_idx] = agent.update_mo()
                
         # EVAL
-        #print("EVAL")
+        #print("\nEVAL")
         for mf_input in config.mult_fact:
             [agent.reset() for _, agent in active_agents.items()]
             avg_rew, avg_coop = interaction_loop(config, parallel_env, active_agents, active_agents_idxs, social_norm, True, mf_input)

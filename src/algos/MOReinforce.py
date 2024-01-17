@@ -108,8 +108,11 @@ class MOReinforce():
     def append_to_replay(self, s, a, r, s_, l, d):
         self.memory._rewards[self.memory.i] = r
         self.memory._logprobs[self.memory.i] = l
-        self.memory.i += 1
         self.accrued_reward_observation += r*self.gamma**self.memory.i
+        #if (self.idx == 1):
+        #    print("rewards=", r)
+        #    print("self.accrued_reward=",self.accrued_reward_observation )
+        self.memory.i += 1
 
     def read_distrib_no_reputation(self, possible_states, n_possible_states):
         dist = torch.full((n_possible_states,2),  0.)
@@ -156,7 +159,7 @@ class MOReinforce():
     
     def update_mo(self):
         #acc_rewards = self.compute_accrued_rewards()
-        #fut_rewards = self.compute_future_discounted_rewards()
+        fut_rewards = self.compute_future_discounted_rewards()
         policy_loss = []
         
         for i, log_prob in enumerate(self.memory._logprobs):
@@ -166,7 +169,10 @@ class MOReinforce():
             if (self.utility == "linear"):
                 #val = -log_prob * self.linear_utility(acc_rewards[i] + fut_rewards[i]*self.gamma**i)
                 #print("acc_rewards[i] + fut_rewards[i]*self.gamma**i=",acc_rewards[i] + fut_rewards[i]*self.gamma**i)
-                #print("self.accrued_reward_observation=", self.accrued_reward_observation)
+                #if (self.idx == 1):
+                #    print("rewards=", self.memory._rewards)
+                #    print("fut rewards last", fut_rewards[0])
+                #    print("self.accrued_reward_observation=", self.accrued_reward_observation)
                 val = -log_prob * self.linear_utility(self.accrued_reward_observation)
             if (self.utility == "prod"):
                 #val = -log_prob * self.utility_mul(acc_rewards[i] + fut_rewards[i]*self.gamma**i)
