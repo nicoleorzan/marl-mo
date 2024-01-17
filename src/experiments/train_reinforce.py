@@ -14,6 +14,9 @@ from src.experiments.params import setup_training_hyperparams
 
 torch.autograd.set_detect_anomaly(True)
 
+def scalarization(reward: np.ndarray):
+        return min(reward[0], reward[1] // 2)
+
 def define_agents(config):
     agents = {}
     for idx in range(config.n_agents):

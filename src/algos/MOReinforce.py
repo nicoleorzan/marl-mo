@@ -97,17 +97,28 @@ class MOReinforce():
         
         return act, logprob
 
-    def get_action_distribution(self, state):
-
+    def get_action_distribution(self, state, accr=None):
         if (self.num_objectives > 1):
-            state = torch.cat(state, self.accrued_reward_observation)
+            state = torch.cat((state, accr),1)
+            #print("cat state=", state)
         with torch.no_grad():
             out = self.policy_act.get_distribution(state)
             return out
+        
+    def get_current_distribution(self, state, accr=None):
+        if (self.num_objectives > 1):
+            state = torch.cat((state, accr),1)
+        #print("cat state=", state)
+        out = self.policy_act.get_distribution(state)
+        distribution = Categorical(out)
+        return distribution
 
     def append_to_replay(self, s, a, r, s_, l, d):
+        self.memory._states[self.memory.i] = s
+        self.memory._actions[self.memory.i] = a
         self.memory._rewards[self.memory.i] = r
         self.memory._logprobs[self.memory.i] = l
+        self.memory._acc_rewards[self.memory.i] = self.accrued_reward_observation
         self.accrued_reward_observation += r*self.gamma**self.memory.i
         #if (self.idx == 1):
         #    print("rewards=", r)
@@ -162,30 +173,49 @@ class MOReinforce():
         fut_rewards = self.compute_future_discounted_rewards()
         policy_loss = []
         
-        for i, log_prob in enumerate(self.memory._logprobs):
-            #print("acc_rewards[i]=", acc_rewards[i])
-            #print("fut_rewards[i]=", fut_rewards[i])
-            #print("acc_rewards[i] + fut_rewards[i]*self.gamma**i=",acc_rewards[i] + fut_rewards[i]*self.gamma**i)
-            if (self.utility == "linear"):
-                #val = -log_prob * self.linear_utility(acc_rewards[i] + fut_rewards[i]*self.gamma**i)
-                #print("acc_rewards[i] + fut_rewards[i]*self.gamma**i=",acc_rewards[i] + fut_rewards[i]*self.gamma**i)
-                #if (self.idx == 1):
-                #    print("rewards=", self.memory._rewards)
-                #    print("fut rewards last", fut_rewards[0])
-                #    print("self.accrued_reward_observation=", self.accrued_reward_observation)
-                #     print("utility=",self.linear_utility(self.accrued_reward_observation))
-                val = -log_prob * self.linear_utility(self.accrued_reward_observation)
-            if (self.utility == "prod"):
-                #val = -log_prob * self.utility_mul(acc_rewards[i] + fut_rewards[i]*self.gamma**i)
-                val = -log_prob * self.utility_mul(self.accrued_reward_observation)
-            #print("val=", val)
-            policy_loss.append(val.reshape(1))
+        ###
+        #print("obs=", self.memory._states)
+        #print("act=", self.memory._actions)
+        #print("accr=", self.memory._acc_rewards)
+        current_distribution = self.get_current_distribution(self.memory._states, self.memory._acc_rewards)
+        #print("current_distribution=",current_distribution)
+        log_probs = current_distribution.log_prob(self.memory._actions) 
+        #print("log probs=", log_probs)
+        #print("self.linear_utility(self.accrued_reward_observation)=",self.linear_utility(self.accrued_reward_observation))
+        loss = -torch.mean(log_probs * self.linear_utility(self.accrued_reward_observation))
 
         self.optimizer.zero_grad()
-        policy_loss = torch.cat(policy_loss).sum()
-        policy_loss.backward()
+        loss.backward()
         self.optimizer.step()
 
+        return loss.detach()
+
+        """
+            ###
+            for i, log_prob in enumerate(self.memory._logprobs):
+                #print("acc_rewards[i]=", acc_rewards[i])
+                #print("fut_rewards[i]=", fut_rewards[i])
+                #print("acc_rewards[i] + fut_rewards[i]*self.gamma**i=",acc_rewards[i] + fut_rewards[i]*self.gamma**i)
+                if (self.utility == "linear"):
+                    #val = -log_prob * self.linear_utility(acc_rewards[i] + fut_rewards[i]*self.gamma**i)
+                    #print("acc_rewards[i] + fut_rewards[i]*self.gamma**i=",acc_rewards[i] + fut_rewards[i]*self.gamma**i)
+                    #if (self.idx == 1):
+                    #    print("rewards=", self.memory._rewards)
+                    #    print("fut rewards last", fut_rewards[0])
+                    #    print("self.accrued_reward_observation=", self.accrued_reward_observation)
+                    #     print("utility=",self.linear_utility(self.accrued_reward_observation))
+                    val = -log_prob * self.linear_utility(self.accrued_reward_observation)
+                if (self.utility == "prod"):
+                    #val = -log_prob * self.utility_mul(acc_rewards[i] + fut_rewards[i]*self.gamma**i)
+                    val = -log_prob * self.utility_mul(self.accrued_reward_observation)
+                #print("val=", val)
+                policy_loss.append(val.reshape(1))
+
+            self.optimizer.zero_grad()
+            policy_loss = torch.cat(policy_loss).sum()
+            policy_loss.backward()
+            self.optimizer.step()
+        """
         self.reset()
 
         return policy_loss.detach()
