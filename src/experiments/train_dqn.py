@@ -1,5 +1,6 @@
 from src.environments import mo_epgg_v0
 from src.algos.MoDQN import MoDQN
+from src.algos.DQN import DQN
 import numpy as np
 import optuna
 from optuna.trial import TrialState
@@ -18,7 +19,10 @@ def define_agents(config):
     agents = {}
     for idx in range(config.n_agents):
         if (config.is_dummy[idx] == 0):
-            agents['agent_'+str(idx)] = MoDQN(config, idx) 
+            if (config.num_objectives == 1):
+                agents['agent_'+str(idx)] = DQN(config, idx) 
+            else:
+                agents['agent_'+str(idx)] = MoDQN(config, idx) 
         else: 
             agents['agent_'+str(idx)] = NormativeAgent(config, idx)
     return agents
