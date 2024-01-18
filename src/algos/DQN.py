@@ -74,9 +74,9 @@ class DQN():
         if (self.decaying_epsilon == True):
             self.eps0 = 0.1
             self.final_epsilon = 0.001
-            self.epsilon_delta = (self.eps0 - self.final_epsilon)/self.n_episodes
+            self.epsilon_delta = (self.eps0 - self.final_epsilon)/self.num_epochs
         self.epsilon = self.eps0
-        self.r = 1.-np.exp(np.log(self.final_epsilon/self.eps0)/self.n_episodes)
+        self.r = 1.-np.exp(np.log(self.final_epsilon/self.eps0)/self.num_epochs)
 
     def reset(self):
         self.memory.reset()

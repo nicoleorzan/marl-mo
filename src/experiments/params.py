@@ -34,6 +34,7 @@ def setup_training_hyperparams(args, trial):
         reputation_assignment = args.reputation_assignment,
         device = DEVICE,
         utility = args.utility,
+        mf_from_interval = args.mf_from_interval,
         print_step = args.print_step
     )
 

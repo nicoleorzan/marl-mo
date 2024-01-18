@@ -8,8 +8,15 @@ def NSW(x):
     return nsw
 
 def GGF(x, w):
-    x_up = x.sort()
-    ggf = torch.inner(x_up, w)
+    #print("w=", w)
+    #print("x=", x)
+    x_up = x.sort()[0]
+    #print("x_up=", x_up)
+    #ggf = torch.inner(w, x_up)
+    #print("act0=", x_up[0][0]*w[0] + x_up[1][0]*w[1] + x_up[2][0]*w[2])
+    #print("act1=", x_up[0][1]*w[0] + x_up[1][1]*w[1] + x_up[2][1]*w[2])
+    ggf = torch.matmul(w, x_up)
+    #print("ggf=", ggf)
     return ggf
 
 def pgg_utility(mf,actions):

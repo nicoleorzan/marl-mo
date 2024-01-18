@@ -1,5 +1,5 @@
 from src.environments import mo_epgg_v0
-from src.algos.DQN import DQN
+from src.algos.MoDQN import MoDQN
 import numpy as np
 import optuna
 from optuna.trial import TrialState
@@ -18,7 +18,7 @@ def define_agents(config):
     agents = {}
     for idx in range(config.n_agents):
         if (config.is_dummy[idx] == 0):
-            agents['agent_'+str(idx)] = DQN(config, idx) 
+            agents['agent_'+str(idx)] = MoDQN(config, idx) 
         else: 
             agents['agent_'+str(idx)] = NormativeAgent(config, idx)
     return agents
@@ -131,7 +131,7 @@ def objective(args, repo_name, trial=None):
     
     #### TRAINING LOOP
     coop_agents_mf = {}; rew_agents_mf = {}
-    for epoch in range(config.n_episodes):
+    for epoch in range(config.num_epochs):
         #print("\n==========>Epoch=", epoch)
 
         # pick a pair of agents

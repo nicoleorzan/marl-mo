@@ -90,6 +90,7 @@ class parallel_env(ParallelEnv):
         self.current_multiplier = torch.Tensor([0.]).to(device)
 
         self.max_val = self.coins_value*self.max_mult
+        #self.mf_from_interval = 0
 
     def set_active_agents(self, idxs):
         self.active_agents = ["agent_" + str(r) for r in idxs]
@@ -155,6 +156,7 @@ class parallel_env(ParallelEnv):
                 self.current_multiplier = self.set_mf_from_list()
                 if hasattr(self, "mf_from_interval"):
                     if (self.mf_from_interval == 1):
+                        #print("here")
                         self.current_multiplier = self.set_mf_from_interval()
             else: 
                 self.current_multiplier = self.mult_fact.to(device)
@@ -173,9 +175,10 @@ class parallel_env(ParallelEnv):
         return torch.Tensor(random.sample(self.mult_fact,1)).to(device)
     
     def set_mf_from_interval(self):
-        self.min_mf_value = 0.
-        self.max_mf_value = 3.5
-        return (self.min_mf_value - self.max_mf_value) * torch.rand(1) + self.max_mf_value
+        val = torch.FloatTensor(1, 1).uniform_(min(self.mult_fact), max(self.mult_fact))[0]
+        #print("val=", val)
+        return val
+        #return (self.min_mf_value - self.max_mf_value) * torch.rand(0,1) + self.max_mf_value
 
     def get_coins(self):
         return self.coins
@@ -230,6 +233,10 @@ class parallel_env(ParallelEnv):
         - infos
         dicts where each dict looks like {agent_1: item_1, agent_2: item_2}
         '''
+
+        for ag, act in actions.items():
+            assert(act in [torch.Tensor([0]),torch.Tensor([1])])
+
         if not actions:
             self.agents = []
             return {}, {}, {}, {}

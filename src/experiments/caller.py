@@ -33,8 +33,9 @@ if __name__ == '__main__':
     parser.add_argument('--optimize', type=int, choices = [0, 1], default=0) # 1 for true 0 for false
     parser.add_argument('--introspective', type=int, choices = [0, 1], default=0) # 1 for true 0 for false
     parser.add_argument('--reputation_assignment', type=int, choices = [0, 1], default=0) # 1 for true 0 for false
+    parser.add_argument('--mf_from_interval', type=int, choices = [0, 1], default=0) # 1 for true 0 for false
     parser.add_argument('--utility', type=str, choices = ["linear", "prod"], default="linear")
-    parser.add_argument('--print_step', type=int, default=30)
+    parser.add_argument('--print_step', type=int, default=50)
 
     args = parser.parse_args()
     n_certain_agents = args.uncertainties.count(0.)

@@ -34,6 +34,7 @@ def interaction_loop(config, parallel_env, active_agents, active_agents_idxs, so
         observations = parallel_env.reset()
     
     #print("observations=",observations)
+    #if (_eval==False):
     #print("current mult=", parallel_env.current_multiplier)
     rewards_dict = {}
     actions_dict = {}

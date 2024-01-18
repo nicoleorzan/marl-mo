@@ -9,10 +9,16 @@ class ExperienceReplayMemory:
     def __init__(self, capacity, config):
         self.config = config
         self.capacity = capacity
+
+        if (self.config.reputation_enabled == 0):
+            self.input_act = 1
+        else: 
+            self.input_act = 2
+
         self.reset()
         
     def reset(self):
-        self._states = torch.empty((self.config.num_game_iterations,1))
+        self._states = torch.empty((self.config.num_game_iterations,self.input_act))
         self._actions = torch.empty((self.config.num_game_iterations,1))
         self._rewards = torch.empty((self.config.num_game_iterations,self.config.num_objectives))
         self._acc_rewards = torch.empty((self.config.num_game_iterations,self.config.num_objectives))
