@@ -2,10 +2,10 @@ from src.algos.Actor import Actor
 import copy
 import torch
 import random
-import torch.nn as nn
 import numpy as np
 from collections import namedtuple
 from src.utils.utils import GGF
+from src.utils import utils
 
 
 # set device to cpu or cuda
@@ -82,19 +82,16 @@ class MoDQN():
         self.epsilon = self.eps0
         self.r = 1.-np.exp(np.log(self.final_epsilon/self.eps0)/self.num_epochs)
 
-        self.w = torch.ones(params.num_objectives)
-
-    def scalarized_q_values(self, obs, w: np.ndarray) -> np.ndarray:
-        """Returns the scalarized Q values for each action, given observation and weights."""
-        t_obs = tuple(obs)
-        if t_obs not in self.q_table:
-            return np.zeros(self.action_dim)
-        return np.array([self.scalarization(state_action_value, w) for state_action_value in self.q_table[t_obs]])
+        self.w = torch.Tensor(self.weights)
+        print("self.w=", self.w)
+        if (self.scalarization_function == "linear"):
+            self.scal_func = utils.linear
+        elif (self.scalarization_function == "ggf"):
+            self.scal_func = utils.GGF
 
     def reset(self):
         self.memory.reset()
         self.memory.i = 0
-        #self.observed_mult_factors = torch.zeros(self.num_game_iterations)
         self.idx_mf = 0
 
     def argmax(self, q_values):
@@ -120,8 +117,8 @@ class MoDQN():
         if (_eval == True):
             #print("action selected with argmax bc EVAL=TRUE")
             act_values = self.policy_act.get_values(state=state_act)[0].view(self.num_objectives,self.action_size)
-            ggf = GGF(act_values, self.w)
-            action = self.argmax(ggf)
+            scalarized_action_val = self.scal_func(act_values, self.w)
+            action = self.argmax(scalarized_action_val)
             #action = self.argmax(self.policy_act.get_values(state=state_act)[0])
             
         elif (_eval == False):
@@ -132,8 +129,8 @@ class MoDQN():
                 #print("self.policy_act.get_values(state=state_act)[0]=",self.policy_act.get_values(state=state_act)[0])
                 act_values = self.policy_act.get_values(state=state_act)[0].view(self.num_objectives,self.action_size)
                 #print("act_val=", act_values)
-                ggf = GGF(act_values, self.w)
-                action = self.argmax(ggf)
+                scalarized_action_val = self.scal_func(act_values, self.w)
+                action = self.argmax(scalarized_action_val)
                 #print("action=", action)
                 
         return torch.Tensor([action])

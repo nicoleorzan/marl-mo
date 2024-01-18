@@ -3,6 +3,12 @@ import itertools
 import numpy as np
 import random
 
+def linear(r, w):
+    utility = 0
+    for ri, wi in zip(r,w):
+        utility += ri*wi
+    return utility
+
 def NSW(x):
     nsw = (torch.prod(x))**(1./len(x))
     return nsw

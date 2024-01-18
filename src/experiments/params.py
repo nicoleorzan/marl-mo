@@ -33,9 +33,10 @@ def setup_training_hyperparams(args, trial):
         rule = args.rule,
         reputation_assignment = args.reputation_assignment,
         device = DEVICE,
-        utility = args.utility,
+        scalarization_function = args.scalarization_function,
         mf_from_interval = args.mf_from_interval,
-        print_step = args.print_step
+        print_step = args.print_step,
+        weights = args.weights
     )
 
     if (args.algorithm == "reinforce"):  

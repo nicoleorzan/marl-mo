@@ -34,8 +34,13 @@ if __name__ == '__main__':
     parser.add_argument('--introspective', type=int, choices = [0, 1], default=0) # 1 for true 0 for false
     parser.add_argument('--reputation_assignment', type=int, choices = [0, 1], default=0) # 1 for true 0 for false
     parser.add_argument('--mf_from_interval', type=int, choices = [0, 1], default=0) # 1 for true 0 for false
-    parser.add_argument('--utility', type=str, choices = ["linear", "prod"], default="linear")
+    parser.add_argument('--scalarization_function', type=str, choices = ["linear", "ggf"], default="linear")
     parser.add_argument('--print_step', type=int, default=50)
+    parser.add_argument( # to fill with values of weights for every objective (can be 0.)
+        "--weights",
+        nargs="*",
+        type=float,
+        default=[])
 
     args = parser.parse_args()
     n_certain_agents = args.uncertainties.count(0.)
@@ -48,6 +53,7 @@ if __name__ == '__main__':
     if (args.algorithm == "q-learning"):
         assert(n_certain_agents == args.n_agents)
     assert(len(args.uncertainties) == args.n_agents)
+    assert(len(args.weights) == args.num_objectives)
 
     if (args.reputation_enabled == 0):
         assert(args.proportion_dummy_agents == 0)
