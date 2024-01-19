@@ -49,6 +49,7 @@ if __name__ == '__main__':
     # if GGF is employed
     #check if weights are organized in descending order:  w_1 > ... > w_n
     w = torch.Tensor(args.weights)
+    assert(torch.sum(w) == 1)
     if (args.scalarization_function == "ggf"):
         assert(w.sort(descending=True)[0] == w).all()
     
