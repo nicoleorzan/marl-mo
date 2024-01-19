@@ -1,5 +1,5 @@
 import argparse
-import ast
+import torch
 from src.experiments.train_reinforce import train_reinforce
 from src.experiments.train_q_learning import train_q_learning
 from src.experiments.train_dqn import train_dqn
@@ -45,6 +45,12 @@ if __name__ == '__main__':
     args = parser.parse_args()
     n_certain_agents = args.uncertainties.count(0.)
     n_uncertain = args.n_agents - n_certain_agents
+
+    # if GGF is employed
+    #check if weights are organized in descending order:  w_1 > ... > w_n
+    w = torch.Tensor(args.weights)
+    if (args.scalarization_function == "ggf"):
+        assert(w.sort(descending=True)[0] == w).all()
     
     assert(args.proportion_dummy_agents >= 0.)    
     assert(args.proportion_dummy_agents <= 1.)
