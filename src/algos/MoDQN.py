@@ -83,11 +83,15 @@ class MoDQN():
         self.r = 1.-np.exp(np.log(self.final_epsilon/self.eps0)/self.num_epochs)
 
         self.w = torch.Tensor(self.weights)
-        print("self.w=", self.w)
         if (self.scalarization_function == "linear"):
             self.scal_func = utils.linear
         elif (self.scalarization_function == "ggf"):
             self.scal_func = utils.GGF
+
+        #a = torch.Tensor([[1.5000]])
+        #print("a=",a)
+        #vals = self.policy_act.get_values(state=a)[0].view(self.num_objectives,self.action_size)
+        #print("vals=", vals)
 
     def reset(self):
         self.memory.reset()
@@ -95,6 +99,7 @@ class MoDQN():
         self.idx_mf = 0
 
     def argmax(self, q_values):
+        #print("q_val=", q_values)
         top = torch.Tensor([-10000000])
         ties = []
 
@@ -182,17 +187,35 @@ class MoDQN():
         batch_state, batch_action, batch_reward, non_final_next_states, non_final_mask, empty_next_state_values = batch_vars
         #print("batch_state=",batch_state)
     
-        current_q_values = self.policy_act.get_values(batch_state)
-        current_q_values = torch.gather(current_q_values, dim=1, index=batch_action)
+        current_q_values = self.policy_act.get_values(batch_state).view(self.batch_size, self.num_objectives, self.action_size)
+        #print("current_q_values",current_q_values, current_q_values.shape)
+        #scalarized_q_values = self.scal_func(current_q_values, self.w)
+        #print("scal vals=",scalarized_q_values)
+        #print("batch_actions=", batch_action, batch_action.shape)
+        #ba = torch.Tensor([[1.],[0.]])
+        batch_action = batch_action.repeat(1, self.num_objectives).view(self.batch_size, self.num_objectives, 1)
+        #print("batch_actions=", batch_action, batch_action.shape)
+        current_q_values = torch.gather(current_q_values, dim=2, index=batch_action)
+        #print("vals filtered by acts=",current_q_values)
         
         #compute target
         with torch.no_grad():
-            max_next_q_values = torch.zeros(self.batch_size, device=self.device, dtype=torch.float).unsqueeze(dim=1)
+            max_next_q_values = torch.zeros((self.batch_size, self.num_objectives, 1), device=self.device, dtype=torch.float)#.unsqueeze(dim=1)
+            #print("max_next_q_values (empty)=",max_next_q_values)
             if not empty_next_state_values:
+                #print("non_final_next_states=",non_final_next_states)
                 max_next_action = self.get_max_next_state_action(non_final_next_states)
-                dist = self.policy_act_target.get_distribution(state=non_final_next_states) #.act(state=non_final_next_states, greedy=False, get_distrib=True)
+                #print("max_next_action=",max_next_action, max_next_action.shape)
+                max_next_action = max_next_action.repeat(1, self.num_objectives).view(self.batch_size, self.num_objectives, 1)
+                #print("max_next_action=",max_next_action.shape)
+                dist = self.policy_act_target.get_values(state=non_final_next_states).view(self.batch_size, self.num_objectives, self.action_size) #.act(state=non_final_next_states, greedy=False, get_distrib=True)
+                #print("dist=",dist, dist.shape)
+                #print("dist.gather(1, max_next_action)=",dist.gather(1, max_next_action),dist.gather(1, max_next_action).shape )
                 max_next_q_values[non_final_mask] = dist.gather(1, max_next_action)
-            expected_q_values = batch_reward + self.gamma*max_next_q_values
+            #print("batch_reward=",batch_reward.unsqueeze(0), batch_reward.unsqueeze(-1).shape)
+            #print("max_next_q_values=",max_next_q_values, max_next_q_values.shape)
+            #print("current_q_values=",current_q_values, current_q_values.shape)
+            expected_q_values = batch_reward.unsqueeze(-1) + self.gamma*max_next_q_values
 
         diff = (expected_q_values - current_q_values)
         loss = self.MSE(diff)
@@ -238,8 +261,13 @@ class MoDQN():
             self.policy_act_target.load_state_dict(self.policy_act.state_dict())
 
     def get_max_next_state_action(self, next_states):
-        dist = self.policy_act_target.get_distribution(state=next_states) ##.act(state=next_states, greedy=False, get_distrib=True)
-        max_vals = dist.max(dim=1)[1].view(-1, 1)
+       # dist0 = self.policy_act_target.get_distribution(state=next_states) ##.act(state=next_states, greedy=False, get_distrib=True)
+        next_vals = self.policy_act_target.get_values(state=next_states).view(self.batch_size, self.num_objectives,self.action_size) ##.act(state=next_states, greedy=False, get_distrib=True)
+       #print("dist=", next_vals)
+        scalarized_next_vals = self.scal_func(next_vals, self.w)
+        #print("scalarized_next_vals=",scalarized_next_vals)
+        max_vals = scalarized_next_vals.max(dim=1)[1]#.view(-1, 1)
+        #print("max_vals=",max_vals)
         return max_vals
     
     def MSE(self, x):

@@ -15,8 +15,10 @@ def NSW(x):
 
 def GGF(x, w):
     #print("w=", w)
-    #print("x=", x)
-    x_up = x.sort()[0]
+    #print("x=", x, x.shape)
+    _dim=0
+    #print("dim=", _dim)
+    x_up = x.sort(dim=_dim)[0]
     #print("x_up=", x_up)
     #ggf = torch.inner(w, x_up)
     #print("act0=", x_up[0][0]*w[0] + x_up[1][0]*w[1] + x_up[2][0]*w[2])

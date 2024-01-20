@@ -152,7 +152,7 @@ def objective(args, repo_name, trial=None):
         interaction_loop(config, parallel_env, active_agents, active_agents_idxs, social_norm, _eval=False)
 
         # update agents
-        #print("UPDATE!!")
+        #print("\n\nUPDATE!!")
         losses = {}
         for ag_idx, agent in active_agents.items():
             losses[ag_idx] = agent.update(epoch)

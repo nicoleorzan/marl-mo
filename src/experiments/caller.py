@@ -4,6 +4,10 @@ from src.experiments.train_reinforce import train_reinforce
 from src.experiments.train_q_learning import train_q_learning
 from src.experiments.train_dqn import train_dqn
 
+def non_increasing(L):
+    return all(x>y for x, y in zip(L, L[1:]))
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--n_agents', type=int)
@@ -48,10 +52,15 @@ if __name__ == '__main__':
 
     # if GGF is employed
     #check if weights are organized in descending order:  w_1 > ... > w_n
-    w = torch.Tensor(args.weights)
-    assert(torch.sum(w) == 1)
+    #print("args.weights",args.weights)
+    #print("non inc?", non_increasing(args.weights))
     if (args.scalarization_function == "ggf"):
-        assert(w.sort(descending=True)[0] == w).all()
+        assert (non_increasing(args.weights) == True) 
+    #w = torch.Tensor(args.weights)
+    #print("w=", w)
+    #assert(torch.sum(w) == 1)
+    #if (args.scalarization_function == "ggf"):
+    #    assert(w.sort(descending=True)[0] == w).all()
     
     assert(args.proportion_dummy_agents >= 0.)    
     assert(args.proportion_dummy_agents <= 1.)

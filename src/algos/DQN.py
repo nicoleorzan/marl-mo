@@ -163,7 +163,9 @@ class DQN():
         #print("batch_state=",batch_state)
     
         current_q_values = self.policy_act.get_values(batch_state)
+        print("current_q_values=",current_q_values, current_q_values.shape, "actions=", batch_action, batch_action.shape)
         current_q_values = torch.gather(current_q_values, dim=1, index=batch_action)
+        print("gather=",current_q_values)
         
         #compute target
         with torch.no_grad():
