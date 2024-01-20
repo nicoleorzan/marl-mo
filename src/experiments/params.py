@@ -60,7 +60,7 @@ def setup_training_hyperparams(args, trial):
             obs_size = obs_size, # mult factor and reputation of opponent
             gamma = 0.99,
             chi = 0.001,
-            epsilon = 0.5,
+            epsilon = 0.01,
             memory_size = 500,
             n_hidden_act = 1,
             #freq_counts = args.freq_counts,
