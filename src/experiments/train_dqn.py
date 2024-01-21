@@ -108,14 +108,20 @@ def interaction_loop(config, parallel_env, active_agents, active_agents_idxs, so
 
         if done:
             if (_eval == True):
-                avg_reward = {}; avg_coop = {}
+                avg_reward = {}; avg_coop = {}; scal_func = {}
                 for ag_idx, agent in active_agents.items():
                     avg_coop[ag_idx] = torch.mean(torch.stack(actions_dict[ag_idx]).float())
-                    avg_reward[ag_idx] = torch.mean(torch.stack(rewards_dict[ag_idx]))
+                    # computing avg_reward for every objective (expectation)
+                    avg_reward[ag_idx] = torch.mean(torch.stack(rewards_dict[ag_idx]), dim=0).unsqueeze(1)
+                    #print("rewards_dict=", rewards_dict)
+                    #print("avg_reward=",avg_reward)
+                    #computing scalarization function, after expectation (SER)
+                    scal_func[ag_idx] = agent.scal_func(avg_reward[ag_idx], agent.w)
+                    #print("scal func=", scal_func)
             break
 
     if (_eval == True):
-        return avg_reward, avg_coop
+        return avg_reward, avg_coop, scal_func
 
 def objective(args, repo_name, trial=None):
 
@@ -134,7 +140,7 @@ def objective(args, repo_name, trial=None):
     social_norm = SocialNorm(config, agents)
     
     #### TRAINING LOOP
-    coop_agents_mf = {}; rew_agents_mf = {}
+    coop_agents_mf = {}; rew_agents_mf = {}; scal_func_mf ={}
     for epoch in range(config.num_epochs):
         #print("\n==========>Epoch=", epoch)
 
@@ -152,22 +158,27 @@ def objective(args, repo_name, trial=None):
         interaction_loop(config, parallel_env, active_agents, active_agents_idxs, social_norm, _eval=False)
 
         # update agents
-        print("\n\nUPDATE!!")
+        #print("\n\nUPDATE!!")
         losses = {}
         for ag_idx, agent in active_agents.items():
             losses[ag_idx] = agent.update(epoch)
 
         # evaluation step
+        #print("\n\nEVAL")
         #print("\n\n===================================>EVAL")
         for mf_input in config.mult_fact:
-            avg_rew, avg_coop = interaction_loop(config, parallel_env, active_agents, active_agents_idxs, social_norm, True, mf_input)
+            #print("mf=", mf_input)
+            avg_rew, avg_coop, scal_func = interaction_loop(config, parallel_env, active_agents, active_agents_idxs, social_norm, True, mf_input)
             avg_coop_tot = torch.mean(torch.stack([cop_val for _, cop_val in avg_coop.items()]))
-
+            #print("==>avg_rew over loop=", avg_rew)
             avg_rep = np.mean([agent.reputation[0] for _, agent in agents.items() if (agent.is_dummy == False)])
             measure = avg_rep
             #print("avg_coop=", avg_coop)
             coop_agents_mf[mf_input] = avg_coop
             rew_agents_mf[mf_input] = avg_rew
+            scal_func_mf[mf_input] = scal_func
+        #print("rew_agents_mf=",rew_agents_mf)
+        #print("scal_func_mf=",scal_func_mf)
 
         dff_coop_per_mf = dict(("avg_coop_mf"+str(mf), torch.mean(torch.stack([ag_coop for _, ag_coop in coop_agents_mf[mf].items()]))) for mf in config.mult_fact)
         dff_rew_per_mf = dict(("avg_rew_mf"+str(mf), torch.mean(torch.stack([ag_coop for _, ag_coop in rew_agents_mf[mf].items()]))) for mf in config.mult_fact)
@@ -210,8 +221,6 @@ def objective(args, repo_name, trial=None):
             stacked = torch.stack([val for _, val in Q.items()])
             #print("stacked=", stacked, stacked.shape)
             avg_distrib = torch.mean(stacked, dim=0)"""
-        #print("avg_distrib=", avg_distrib)
-
 
         if (config.optuna_):
             trial.report(measure, epoch)
@@ -224,23 +233,30 @@ def objective(args, repo_name, trial=None):
         if (config.wandb_mode == "online" and float(epoch)%30. == 0.):
             for ag_idx, agent in active_agents.items():
                 if (agent.is_dummy == False):
-                    df_avg_coop = dict((ag_idx+"avg_coop_mf"+str(mf), coop_agents_mf[mf_input][ag_idx]) for mf in config.mult_fact)
-                    df_avg_rew = {ag_idx+"avg_rew": avg_rew[ag_idx]}
-                    #df_Q = {ag_idx+"Q[0,0]": Q[ag_idx][0,0], ag_idx+"Q[0,1]": Q[ag_idx][0,1], ag_idx+"Q[1,0]": Q[ag_idx][1,0], ag_idx+"Q[1,1]": Q[ag_idx][1,1]}
+                    df_avg_coop = dict((ag_idx+"avg_coop_mf"+str(mf_input), coop_agents_mf[mf_input][ag_idx]) for mf_input in config.mult_fact)
+                    df_scal_func = dict((ag_idx+"avg_scal_func"+str(mf_input), scal_func_mf[mf_input][ag_idx]) for mf_input in config.mult_fact)
+                    df_avg_rew = {}
+                    for obj_idx in range(config.num_objectives):
+                        df_rews_tmp = dict((ag_idx+"rew_mf"+str(mf_input)+"_obj"+str(obj_idx), rew_agents_mf[mf_input][ag_idx][obj_idx]) for mf_input in config.mult_fact)
+                        df_avg_rew = {**df_avg_rew, **df_rews_tmp}
                     df_loss = {ag_idx+"loss": losses[ag_idx]}
                     df_agent = {**{
                         ag_idx+"_reputation": agent.reputation,
                         ag_idx+"epsilon": active_agents[str(ag_idx)].epsilon,
                         'epoch': epoch}, 
-                        **df_avg_coop, **df_avg_rew, **df_loss
+                        **df_avg_coop, **df_avg_rew, **df_loss, **df_scal_func
                         }
                 else:
                     df_avg_coop = {ag_idx+"dummy_avg_coop": avg_coop[ag_idx]}
-                    df_avg_rew = {ag_idx+"dummy_avg_rew": avg_rew[ag_idx]}
+                    df_scal_func = {ag_idx+"dummy_scal_func": scal_func_mf[ag_idx]}
+                    df_avg_rew = {}
+                    for obj_idx in range(config.num_objectives):
+                        df_rews_tmp = dict((ag_idx+"rew_mf"+str(mf_input)+"_obj"+str(obj_idx), rew_agents_mf[mf_input][ag_idx][obj_idx]) for mf_input in config.mult_fact)
+                        df_avg_rew = {**df_avg_rew, **df_rews_tmp}
                     df_agent = {**{
                         ag_idx+"dummy_reputation": agent.reputation,
                         'epoch': epoch}, 
-                        **df_avg_coop, **df_avg_rew
+                        **df_avg_coop, **df_avg_rew, **df_scal_func
                         }
                 if ('df_agent' in locals() ):
                     wandb.log(df_agent, step=epoch, commit=False)

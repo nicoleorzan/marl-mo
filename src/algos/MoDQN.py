@@ -166,7 +166,7 @@ class MoDQN():
     def GGF(self, x, w):
         #print("w=", w)
         #print("x=", x, x.shape)
-        _dim=1 # WE CONSIDER DIM0 AS THE BATCH SIZE
+        _dim=1 # WE CONSIDER DIM-0 AS THE BATCH SIZE
         #print("dim=", _dim)
         x_up = x.sort(dim=_dim)[0]
         #print("x_up=", x_up)
