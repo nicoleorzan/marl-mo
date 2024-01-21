@@ -152,7 +152,7 @@ def objective(args, repo_name, trial=None):
         interaction_loop(config, parallel_env, active_agents, active_agents_idxs, social_norm, _eval=False)
 
         # update agents
-        #print("\n\nUPDATE!!")
+        print("\n\nUPDATE!!")
         losses = {}
         for ag_idx, agent in active_agents.items():
             losses[ag_idx] = agent.update(epoch)
@@ -172,16 +172,27 @@ def objective(args, repo_name, trial=None):
         dff_coop_per_mf = dict(("avg_coop_mf"+str(mf), torch.mean(torch.stack([ag_coop for _, ag_coop in coop_agents_mf[mf].items()]))) for mf in config.mult_fact)
         dff_rew_per_mf = dict(("avg_rew_mf"+str(mf), torch.mean(torch.stack([ag_coop for _, ag_coop in rew_agents_mf[mf].items()]))) for mf in config.mult_fact)
 
-        Q = {}
+        """Q = {}
         if (config.reputation_enabled == 0): 
             for ag_idx, agent in agents.items():
                 if (agent.is_dummy == False):
                     if ag_idx not in Q:
-                        Q[ag_idx] = torch.zeros(len(config.mult_fact), 2) # mult fact, poss actions
+                        Q[ag_idx] = torch.zeros(len(config.mult_fact), config.num_objectives, 2) # mult fact, poss actions
+                        #print("Q=",Q)
                         possible_states = torch.stack([torch.Tensor([mf]) for _, mf in enumerate(config.mult_fact)])
-                        Q[ag_idx] = agent.get_action_values(possible_states).detach()
+                        for si, s in enumerate(possible_states):
+                            #print("Q[ag_idx][si] =",Q[ag_idx][si] )
+                            Q[ag_idx][si] = agent.get_action_values(s).detach()
+                        #print("Q[",ag_idx,"]=", Q[ag_idx])
+                        # scalarize
+                        scal = agent.scal_func(Q[ag_idx][si], agent.w)
+                        #print("scal=", scal)
+
+
             stacked = torch.stack([val for ag_idx, val in Q.items()])
+            #print("stacked=",stacked)
             avg_distrib = torch.mean(stacked, dim=0)
+            #print("Q avg over agents=", avg_distrib)
 
         else:
             possible_reputations = [0., 1.]
@@ -198,7 +209,7 @@ def objective(args, repo_name, trial=None):
             #print("prob=", prob)
             stacked = torch.stack([val for _, val in Q.items()])
             #print("stacked=", stacked, stacked.shape)
-            avg_distrib = torch.mean(stacked, dim=0)
+            avg_distrib = torch.mean(stacked, dim=0)"""
         #print("avg_distrib=", avg_distrib)
 
 
@@ -233,16 +244,17 @@ def objective(args, repo_name, trial=None):
                         }
                 if ('df_agent' in locals() ):
                     wandb.log(df_agent, step=epoch, commit=False)
-            if (config.reputation_enabled == 0): 
-                dff_Q00 = {"avg_Q["+str(mf)+",0]": avg_distrib[imf,0] for imf, mf in enumerate(config.mult_fact) }
-                dff_Q01 = {"avg_Q["+str(mf)+",1]": avg_distrib[imf,1] for imf, mf in enumerate(config.mult_fact) }
-                dff_Q10 = dict(())
-                dff_Q11 = dict(())
-            else:
+            #if (config.reputation_enabled == 0): 
+            #    for o in range(config.num_objectives):
+            #        dff_Q0 = {"avg_Q["+str(mf)+",0]": avg_distrib[imf,0] for imf, mf in enumerate(config.mult_fact) }
+            #        dff_Q1 = {"avg_Q["+str(mf)+",1]": avg_distrib[imf,1] for imf, mf in enumerate(config.mult_fact) }
+            #    #dff_Q10 = dict(())
+            #    #dff_Q11 = dict(())
+            """else:
                 dff_Q00 = {"avg_Q[0,"+str(mf)+",0]": avg_distrib[0,imf,0] for imf, mf in enumerate(config.mult_fact) }
                 dff_Q01 = {"avg_Q[0,"+str(mf)+",1]": avg_distrib[0,imf,1] for imf, mf in enumerate(config.mult_fact) }
                 dff_Q10 = {"avg_Q[1,"+str(mf)+",0]": avg_distrib[1,imf,0] for imf, mf in enumerate(config.mult_fact) }
-                dff_Q11 = {"avg_Q[1,"+str(mf)+",1]": avg_distrib[1,imf,1] for imf, mf in enumerate(config.mult_fact) }
+                dff_Q11 = {"avg_Q[1,"+str(mf)+",1]": avg_distrib[1,imf,1] for imf, mf in enumerate(config.mult_fact) }"""
             dff = {
                 "epoch": epoch,
                 "avg_rep": avg_rep,
@@ -251,7 +263,7 @@ def objective(args, repo_name, trial=None):
                 "weighted_average_coop": torch.mean(torch.stack([avg_i for _, avg_i in avg_rew.items()])) # only on the agents that played, of course
                 }
             if (config.non_dummy_idxs != []): 
-                dff = {**dff, **dff_coop_per_mf, **dff_rew_per_mf, **dff_Q00, **dff_Q01, **dff_Q10, **dff_Q11}
+                dff = {**dff, **dff_coop_per_mf, **dff_rew_per_mf}#, **dff_Q0, **dff_Q1}#, **dff_Q10, **dff_Q11}
             wandb.log(dff,
                 step=epoch, commit=True)
 

@@ -13,7 +13,7 @@ def NSW(x):
     nsw = (torch.prod(x))**(1./len(x))
     return nsw
 
-def GGF(x, w):
+"""def GGF(x, w):
     #print("w=", w)
     #print("x=", x, x.shape)
     _dim=0
@@ -25,7 +25,7 @@ def GGF(x, w):
     #print("act1=", x_up[0][1]*w[0] + x_up[1][1]*w[1] + x_up[2][1]*w[2])
     ggf = torch.matmul(w, x_up)
     #print("ggf=", ggf)
-    return ggf
+    return ggf"""
 
 def pgg_utility(mf,actions):
     coins = 4

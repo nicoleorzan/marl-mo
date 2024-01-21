@@ -37,6 +37,7 @@ def setup_training_hyperparams(args, trial):
         mf_from_interval = args.mf_from_interval,
         print_step = args.print_step,
         weights = args.weights
+        #_print = args._print
     )
 
     if (args.algorithm == "reinforce"):  
@@ -60,7 +61,7 @@ def setup_training_hyperparams(args, trial):
             obs_size = obs_size, # mult factor and reputation of opponent
             gamma = 0.99,
             chi = 0.001,
-            epsilon = 0.01,
+            epsilon = args.epsilon_dqn,
             memory_size = 500,
             n_hidden_act = 1,
             #freq_counts = args.freq_counts,
