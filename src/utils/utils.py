@@ -13,20 +13,6 @@ def NSW(x):
     nsw = (torch.prod(x))**(1./len(x))
     return nsw
 
-"""def GGF(x, w):
-    #print("w=", w)
-    #print("x=", x, x.shape)
-    _dim=0
-    #print("dim=", _dim)
-    x_up = x.sort(dim=_dim)[0]
-    #print("x_up=", x_up)
-    #ggf = torch.inner(w, x_up)
-    #print("act0=", x_up[0][0]*w[0] + x_up[1][0]*w[1] + x_up[2][0]*w[2])
-    #print("act1=", x_up[0][1]*w[0] + x_up[1][1]*w[1] + x_up[2][1]*w[2])
-    ggf = torch.matmul(w, x_up)
-    #print("ggf=", ggf)
-    return ggf"""
-
 def pgg_utility(mf,actions):
     coins = 4
     common_pot = torch.sum(torch.Tensor([coins*a for a in actions]))

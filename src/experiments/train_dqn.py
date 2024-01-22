@@ -98,7 +98,7 @@ def interaction_loop(config, parallel_env, active_agents, active_agents_idxs, so
                     next_states[idx_agent] = torch.cat((other.reputation, observations[idx_agent]))
                 else: 
                     next_states[idx_agent] = observations[idx_agent]
-
+        
         if (_eval == False):
             # save iteration
             for ag_idx, agent in active_agents.items():
@@ -114,7 +114,7 @@ def interaction_loop(config, parallel_env, active_agents, active_agents_idxs, so
                     # computing avg_reward for every objective (expectation)
                     avg_reward[ag_idx] = torch.mean(torch.stack(rewards_dict[ag_idx]), dim=0).unsqueeze(1)
                     #print("rewards_dict=", rewards_dict)
-                    #print("avg_reward=",avg_reward)
+                    #print("avg_reward=",avg_reward[ag_idx].shape)
                     #computing scalarization function, after expectation (SER)
                     scal_func[ag_idx] = agent.scal_func(avg_reward[ag_idx], agent.w)
                     #print("scal func=", scal_func)
@@ -154,7 +154,7 @@ def objective(args, repo_name, trial=None):
         parallel_env.set_active_agents(active_agents_idxs)
 
         # TRAIN
-        #print("\n\n=====================================>TRAIN")
+        #print("\n\nTRAIN")
         interaction_loop(config, parallel_env, active_agents, active_agents_idxs, social_norm, _eval=False)
 
         # update agents
@@ -179,48 +179,10 @@ def objective(args, repo_name, trial=None):
             scal_func_mf[mf_input] = scal_func
         #print("rew_agents_mf=",rew_agents_mf)
         #print("scal_func_mf=",scal_func_mf)
+        #print("END EVAL")
 
         dff_coop_per_mf = dict(("avg_coop_mf"+str(mf), torch.mean(torch.stack([ag_coop for _, ag_coop in coop_agents_mf[mf].items()]))) for mf in config.mult_fact)
         dff_rew_per_mf = dict(("avg_rew_mf"+str(mf), torch.mean(torch.stack([ag_coop for _, ag_coop in rew_agents_mf[mf].items()]))) for mf in config.mult_fact)
-
-        """Q = {}
-        if (config.reputation_enabled == 0): 
-            for ag_idx, agent in agents.items():
-                if (agent.is_dummy == False):
-                    if ag_idx not in Q:
-                        Q[ag_idx] = torch.zeros(len(config.mult_fact), config.num_objectives, 2) # mult fact, poss actions
-                        #print("Q=",Q)
-                        possible_states = torch.stack([torch.Tensor([mf]) for _, mf in enumerate(config.mult_fact)])
-                        for si, s in enumerate(possible_states):
-                            #print("Q[ag_idx][si] =",Q[ag_idx][si] )
-                            Q[ag_idx][si] = agent.get_action_values(s).detach()
-                        #print("Q[",ag_idx,"]=", Q[ag_idx])
-                        # scalarize
-                        scal = agent.scal_func(Q[ag_idx][si], agent.w)
-                        #print("scal=", scal)
-
-
-            stacked = torch.stack([val for ag_idx, val in Q.items()])
-            #print("stacked=",stacked)
-            avg_distrib = torch.mean(stacked, dim=0)
-            #print("Q avg over agents=", avg_distrib)
-
-        else:
-            possible_reputations = [0., 1.]
-            for ag_idx, agent in agents.items():
-                #print("\nag_idx=", ag_idx)
-                if (agent.is_dummy == False):
-                    if ag_idx not in Q:
-                        Q[ag_idx] = torch.zeros(2, len(config.mult_fact), 2) # mult fact, poss rep, poss actions
-                        #print("prob[ag_idx]=", prob[ag_idx])
-                    for rep in possible_reputations:
-                        possible_states = torch.stack([torch.Tensor([i, rep]) for i, _ in enumerate(config.mult_fact)])
-                        #print("agent.get_action_values(possible_states).detach()=",agent.get_action_values(possible_states).detach())
-                        Q[ag_idx][int(rep),:,:] = agent.get_action_values(possible_states).detach()
-            #print("prob=", prob)
-            stacked = torch.stack([val for _, val in Q.items()])
-            #print("stacked=", stacked, stacked.shape)
-            avg_distrib = torch.mean(stacked, dim=0)"""
 
         if (config.optuna_):
             trial.report(measure, epoch)
@@ -260,17 +222,7 @@ def objective(args, repo_name, trial=None):
                         }
                 if ('df_agent' in locals() ):
                     wandb.log(df_agent, step=epoch, commit=False)
-            #if (config.reputation_enabled == 0): 
-            #    for o in range(config.num_objectives):
-            #        dff_Q0 = {"avg_Q["+str(mf)+",0]": avg_distrib[imf,0] for imf, mf in enumerate(config.mult_fact) }
-            #        dff_Q1 = {"avg_Q["+str(mf)+",1]": avg_distrib[imf,1] for imf, mf in enumerate(config.mult_fact) }
-            #    #dff_Q10 = dict(())
-            #    #dff_Q11 = dict(())
-            """else:
-                dff_Q00 = {"avg_Q[0,"+str(mf)+",0]": avg_distrib[0,imf,0] for imf, mf in enumerate(config.mult_fact) }
-                dff_Q01 = {"avg_Q[0,"+str(mf)+",1]": avg_distrib[0,imf,1] for imf, mf in enumerate(config.mult_fact) }
-                dff_Q10 = {"avg_Q[1,"+str(mf)+",0]": avg_distrib[1,imf,0] for imf, mf in enumerate(config.mult_fact) }
-                dff_Q11 = {"avg_Q[1,"+str(mf)+",1]": avg_distrib[1,imf,1] for imf, mf in enumerate(config.mult_fact) }"""
+
             dff = {
                 "epoch": epoch,
                 "avg_rep": avg_rep,
