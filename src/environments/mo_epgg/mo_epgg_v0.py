@@ -254,7 +254,9 @@ class parallel_env(ParallelEnv):
             elif (self.num_objectives == 2):
                 rewards[agent] = torch.Tensor([ group_reward, individual_reward[0] ])
             elif (self.num_objectives == 3):
-                reputation = 1 if actions[agent] == 1 else 0
+                reputation = 1
+                if (self.current_multiplier >= 1 and actions[agent] == 0 ):
+                    reputation = 0
                 rewards[agent] = torch.Tensor([ reputation,  group_reward, individual_reward[0] ])
             
             #print("rewards[agent]=",rewards[agent])
