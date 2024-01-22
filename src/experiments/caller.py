@@ -1,5 +1,5 @@
 import argparse
-import torch
+import numpy as np
 from src.experiments.train_reinforce import train_reinforce
 from src.experiments.train_q_learning import train_q_learning
 from src.experiments.train_dqn import train_dqn
@@ -58,6 +58,8 @@ if __name__ == '__main__':
     #print("non inc?", non_increasing(args.weights))
     if (args.scalarization_function == "ggf"):
         assert (non_increasing(args.weights) == True) 
+    print("np.sum(args.weights)=",np.sum(args.weights))
+    assert(np.abs(np.sum(args.weights) - 1.0) < 10E-6)
     #w = torch.Tensor(args.weights)
     #print("w=", w)
     #assert(torch.sum(w) == 1)
