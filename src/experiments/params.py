@@ -67,7 +67,7 @@ def setup_training_hyperparams(args, trial):
             #freq_counts = args.freq_counts,
             hidden_size_act = 4,
             dqn_activation_function = args.dqn_activation_function,
-            lr_actor = 0.001,
+            lr_actor = args.lr_dqn,
             decayRate = 0.999,
             target_net_update_freq = 30,
             alpha = 0.1, # introspection level

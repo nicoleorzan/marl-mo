@@ -41,6 +41,7 @@ if __name__ == '__main__':
     parser.add_argument('--scalarization_function', type=str, choices = ["linear", "ggf"], default="linear")
     parser.add_argument('--print_step', type=int, default=50)
     parser.add_argument('--epsilon_dqn', type=float, default=0.01)
+    parser.add_argument('--lr_dqn', type=float, default=0.001)
     #parser.add_argument('--_print', type=int, choices = [0, 1], default=0) # 1 yes 0 no
     parser.add_argument( # to fill with values of weights for every objective (can be 0.)
         "--weights",
