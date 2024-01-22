@@ -139,6 +139,7 @@ class DQN():
         batch_state = self.memory._states
         batch_action = self.memory._actions.long()
         batch_reward = self.memory._rewards
+        batch_dones = self.memory._dones
         batch_next_state = self.memory._next_states
         
         non_final_mask = torch.tensor(tuple(map(lambda s: s is not None, batch_next_state)), device=self.device, dtype=torch.uint8)
@@ -149,7 +150,7 @@ class DQN():
             non_final_next_states = None
             empty_next_state_values = True
 
-        return batch_state, batch_action, batch_reward, non_final_next_states, non_final_mask, empty_next_state_values
+        return batch_state, batch_action, batch_reward, batch_dones, non_final_next_states, non_final_mask, empty_next_state_values
     
     def read_q_matrix(self):
         possible_states = torch.Tensor([[0.], [1.]])
@@ -159,13 +160,13 @@ class DQN():
         return Q
 
     def compute_loss(self, batch_vars):
-        batch_state, batch_action, batch_reward, non_final_next_states, non_final_mask, empty_next_state_values = batch_vars
+        batch_state, batch_action, batch_reward, batch_dones, non_final_next_states, non_final_mask, empty_next_state_values = batch_vars
         #print("batch_state=",batch_state)
     
         current_q_values = self.policy_act.get_values(batch_state)
-        print("current_q_values=",current_q_values, current_q_values.shape, "actions=", batch_action, batch_action.shape)
+        #print("current_q_values=",current_q_values, current_q_values.shape, "actions=", batch_action, batch_action.shape)
         current_q_values = torch.gather(current_q_values, dim=1, index=batch_action)
-        print("gather=",current_q_values)
+        #print("gather=",current_q_values)
         
         #compute target
         with torch.no_grad():
@@ -174,7 +175,12 @@ class DQN():
                 max_next_action = self.get_max_next_state_action(non_final_next_states)
                 dist = self.policy_act_target.get_distribution(state=non_final_next_states) #.act(state=non_final_next_states, greedy=False, get_distrib=True)
                 max_next_q_values[non_final_mask] = dist.gather(1, max_next_action)
+                for i in range(len(batch_dones)):
+                    if (batch_dones[i] == torch.Tensor([True])):
+                        max_next_q_values[i] = 0.
+                #print("max next q=", max_next_q_values)
             expected_q_values = batch_reward + self.gamma*max_next_q_values
+            #print("expected_q_values=",expected_q_values)
 
         diff = (expected_q_values - current_q_values)
         loss = self.MSE(diff)

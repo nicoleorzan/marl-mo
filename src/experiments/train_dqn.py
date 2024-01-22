@@ -116,7 +116,8 @@ def interaction_loop(config, parallel_env, active_agents, active_agents_idxs, so
                     #print("rewards_dict=", rewards_dict)
                     #print("avg_reward=",avg_reward[ag_idx].shape)
                     #computing scalarization function, after expectation (SER)
-                    scal_func[ag_idx] = agent.scal_func(avg_reward[ag_idx], agent.w)
+                    if (config.num_objectives > 1):
+                        scal_func[ag_idx] = agent.scal_func(avg_reward[ag_idx], agent.w)
                     #print("scal func=", scal_func)
             break
 
@@ -196,7 +197,9 @@ def objective(args, repo_name, trial=None):
             for ag_idx, agent in active_agents.items():
                 if (agent.is_dummy == False):
                     df_avg_coop = dict((ag_idx+"avg_coop_mf"+str(mf_input), coop_agents_mf[mf_input][ag_idx]) for mf_input in config.mult_fact)
-                    df_scal_func = dict((ag_idx+"avg_scal_func"+str(mf_input), scal_func_mf[mf_input][ag_idx]) for mf_input in config.mult_fact)
+                    df_scal_func = {}
+                    if (config.num_objectives > 1):
+                        df_scal_func = dict((ag_idx+"avg_scal_func"+str(mf_input), scal_func_mf[mf_input][ag_idx]) for mf_input in config.mult_fact)
                     df_avg_rew = {}
                     for obj_idx in range(config.num_objectives):
                         df_rews_tmp = dict((ag_idx+"rew_mf"+str(mf_input)+"_obj"+str(obj_idx), rew_agents_mf[mf_input][ag_idx][obj_idx]) for mf_input in config.mult_fact)
@@ -210,7 +213,9 @@ def objective(args, repo_name, trial=None):
                         }
                 else:
                     df_avg_coop = {ag_idx+"dummy_avg_coop": avg_coop[ag_idx]}
-                    df_scal_func = {ag_idx+"dummy_scal_func": scal_func_mf[ag_idx]}
+                    df_scal_func = {}
+                    if (config.num_objectives > 1):
+                        df_scal_func = {ag_idx+"dummy_scal_func": scal_func_mf[ag_idx]}
                     df_avg_rew = {}
                     for obj_idx in range(config.num_objectives):
                         df_rews_tmp = dict((ag_idx+"rew_mf"+str(mf_input)+"_obj"+str(obj_idx), rew_agents_mf[mf_input][ag_idx][obj_idx]) for mf_input in config.mult_fact)
