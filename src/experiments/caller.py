@@ -54,18 +54,12 @@ if __name__ == '__main__':
     n_uncertain = args.n_agents - n_certain_agents
 
     # if GGF is employed
-    #check if weights are organized in descending order:  w_1 > ... > w_n
-    #print("args.weights",args.weights)
-    #print("non inc?", non_increasing(args.weights))
     if (args.scalarization_function == "ggf"):
+        #weights should sum to 1
+        assert(np.abs(np.sum(args.weights) - 1.0) < 10E-6)
+        #weights should be organized in descending order:  w_1 > ... > w_n
         assert (non_increasing(args.weights) == True) 
     print("np.sum(args.weights)=",np.sum(args.weights))
-    assert(np.abs(np.sum(args.weights) - 1.0) < 10E-6)
-    #w = torch.Tensor(args.weights)
-    #print("w=", w)
-    #assert(torch.sum(w) == 1)
-    #if (args.scalarization_function == "ggf"):
-    #    assert(w.sort(descending=True)[0] == w).all()
     
     assert(args.proportion_dummy_agents >= 0.)    
     assert(args.proportion_dummy_agents <= 1.)

@@ -4,7 +4,6 @@ import torch
 import random
 import numpy as np
 from collections import namedtuple
-from src.utils import utils
 
 
 # set device to cpu or cuda
@@ -82,7 +81,7 @@ class MoDQN():
 
         self.w = torch.Tensor(self.weights)
         if (self.scalarization_function == "linear"):
-            self.scal_func = utils.linear
+            self.scal_func = self.linear
         elif (self.scalarization_function == "ggf"):
             self.scal_func = self.GGF
 
@@ -154,12 +153,20 @@ class MoDQN():
             #print("out=", out)
             return out
         
+    def linear(self, x, w):
+        #print("w=", w)
+        #print("x=", x)
+        out = torch.matmul(w, x)
+        #print("out=", out)
+        return out
+        
     def GGF(self, x, w):
         #if (self._print == True and self.idx == 0):
         #    print("CALLING GGF")
         #    print("x=", x, x.shape)
         #    assert(x.shape[1] == self.num_objectives)
         #print("w=", w)
+        #print("x=", x)
         _dim=1 # WE CONSIDER DIM-0 AS THE BATCH SIZE
         #print("dim=", _dim)
         x_up = x.sort(dim=_dim)[0]
