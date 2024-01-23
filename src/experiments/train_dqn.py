@@ -114,7 +114,7 @@ def interaction_loop(config, parallel_env, active_agents, active_agents_idxs, so
                     # computing avg_reward for every objective (expectation)
                     avg_reward[ag_idx] = torch.mean(torch.stack(rewards_dict[ag_idx]), dim=0).unsqueeze(1)
                     #print("rewards_dict=", rewards_dict)
-                    #print("avg_reward=",avg_reward[ag_idx].shape)
+                    #print("avg_reward=",avg_reward[ag_idx])
                     #computing scalarization function, after expectation (SER)
                     if (config.num_objectives > 1):
                         scal_func[ag_idx] = agent.scal_func(avg_reward[ag_idx], agent.w)
