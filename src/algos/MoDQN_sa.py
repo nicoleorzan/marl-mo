@@ -3,6 +3,7 @@ import copy
 import torch
 import random
 import numpy as np
+from itertools import product
 from collections import namedtuple
 
 # set device to cpu or cuda
@@ -28,7 +29,7 @@ class ExperienceReplayMemory:
     def reset(self):
         self._states = torch.empty((self.capacity,self.input_state))
         self._actions = torch.empty((self.capacity,1))
-        self._rewards = torch.empty((self.capacity,self.num_objectives))
+        self._rewards = torch.zeros((self.capacity,self.n_active_agents,self.num_objectives))
         self._next_states = torch.empty((self.capacity,self.input_state))
         self._dones = torch.empty((self.capacity,1), dtype=torch.bool)
         self.i = 0
@@ -41,14 +42,17 @@ class MoDQN():
     def __init__(self, params, idx=0):
         for key, val in params.items(): setattr(self, key, val)
 
-        #self.input_act = self.obs_size
-        if (self.reputation_enabled == 0):
-            self.input_act = 1
-        else: 
-            self.input_act = 2
+        self.input_act = self.obs_size
+        #if (self.reputation_enabled == 0):
+        #    self.input_act = 1
+        #else: 
+        #    self.input_act = 2
         print("input_act=",self.input_act)
+        print("agents functs=", self.agents_functions)
+        print("action_size=",self.action_size)
 
-        _output_size = self.action_size*self.num_objectives
+        _output_size = self.num_objectives*self.n_active_agents*self.action_size**self.n_active_agents
+        print("ouput_size=", _output_size)
 
         self.policy_act = Actor(params=params, input_size=self.input_act, output_size=_output_size, \
             n_hidden=self.n_hidden_act, hidden_size=self.hidden_size_act).to(device)
@@ -79,12 +83,25 @@ class MoDQN():
         self.r = 1.-np.exp(np.log(self.final_epsilon/self.eps0)/self.num_epochs)
 
         self.w = torch.Tensor(self.weights)
+        self.w_agents = torch.Tensor(self.weights_agents)
+
+        # scalarization function for the reward vector of the single agent
         if (self.scalarization_function == "linear"):
             self.scal_func = self.linear
         elif (self.scalarization_function == "ggf"):
             self.scal_func = self.GGF
+        
+        # scalarization functions used for reward vector of the agents he controls
+        self.scal_func_agents = []
+        for i in range(self.n_agents):
+            if (self.agents_functions[i] == "linear"):
+                self.scal_func_agents.append(self.linear)
+            elif (self.agents_functions[i]  == "ggf"):
+                self.scal_func_agents.append(self.GGF)
 
-        self._print =  False
+        self._print = False
+
+        self.possibilities = list(product(range(0,2), repeat=self.n_active_agents))
 
     def reset(self):
         self.memory.reset()
@@ -115,42 +132,44 @@ class MoDQN():
             print("take action")
 
         #self.state_act = self.state_act.view(-1,self.input_act)
+        #print("bef state_act=",state_act)
         state_act = state_act.view(-1,self.input_act)
         #print("state_act=",state_act)
 
         if (_eval == True):
             # WE HAVE TO ADD 1 TO COMPENSATE FOR THE BATCH SIZE!!!
-            act_values = self.policy_act.get_values(state=state_act)[0].view(1, self.num_objectives, self.action_size) 
-            scalarized_action_val = self.scal_func(act_values, self.w)
+            act_values = self.policy_act.get_values(state=state_act)[0].view(1,  self.num_objectives, self.n_active_agents, self.action_size**self.n_active_agents) 
+            scalarized_action_val_agents = torch.zeros(1, self.n_active_agents, self.action_size**self.n_active_agents)
+            for i in range(self.n_active_agents):
+                scalarized_action_val_agents[:,i] = self.scal_func_agents[i](act_values[:,:,i], self.w_agents)
+            scalarized_action_val = self.scal_func(scalarized_action_val_agents, self.w, _dim=1)
             action = self.argmax(scalarized_action_val)
             #action = self.argmax(self.policy_act.get_values(state=state_act)[0])
         
         elif (_eval == False):
-            #print("self.epsilon=", self.epsilon)
             if torch.rand(1) < self.epsilon:
                 action = random.choice([i for i in range(self.action_size)])
                 if (self._print == True and self.idx == 0):
                     print("====> RAND")
                     print("action=", action)
             else:
-                #print("self.policy_act.get_values(state=state_act)[0]=",self.policy_act.get_values(state=state_act)[0])
-                act_values = self.policy_act.get_values(state=state_act)[0].view(1, self.num_objectives, self.action_size)
-                scalarized_action_val = self.scal_func(act_values, self.w)
+                act_values = self.policy_act.get_values(state=state_act)[0].view(1, self.num_objectives, self.n_active_agents, self.action_size**self.n_active_agents) 
+
+                # first I scalarize the agnet's objectives
+                scalarized_action_val_agents = torch.zeros(1, self.n_active_agents, self.action_size**self.n_active_agents)
+                for i in range(self.n_active_agents):
+                    scalarized_action_val_agents[:,i] = self.scal_func_agents[i](act_values[:,:,i], self.w_agents)
+
+                # then I scalarize for the agents
+                scalarized_action_val = self.scal_func(scalarized_action_val_agents, self.w, _dim=1)
+
                 action = self.argmax(scalarized_action_val)
                 if (self._print == True and self.idx == 0):
-                    print("no rand")
-                    print("act_val=", act_values)
-                    print("scalarized_action_val=",scalarized_action_val)
-                    print("action=", action)
-                
+                    print("act_values=", act_values.shape)
+                    print("scalarized_action_val_agents=", scalarized_action_val_agents.shape)
+                    print("scalarized_action_val=",scalarized_action_val.shape)
+
         return torch.Tensor([action])
-        
-    def get_action_values(self, state):
-        #print("state=",state)
-        with torch.no_grad():
-            out = self.policy_act.get_values(state=state).view(self.num_objectives, self.action_size) 
-            #print("out=", out)
-            return out
         
     def linear(self, x, w):
         #print("w=", w)
@@ -159,37 +178,34 @@ class MoDQN():
         #print("out=", out)
         return out
         
-    def GGF(self, x, w):
-        #if (self._print == True and self.idx == 0):
-        #    print("CALLING GGF")
-        #    print("x=", x, x.shape)
-        #    assert(x.shape[1] == self.num_objectives)
-        #print("w=", w)
-        #print("x=", x)
-        _dim=1 # WE CONSIDER DIM-0 AS THE BATCH SIZE
+    def GGF(self, x, w, _dim):
+        #print("w=", w.shape)
+        #print("x=", x.shape)
+        #_dim=1 # WE CONSIDER DIM-0 AS THE BATCH SIZE
         #print("dim=", _dim)
         x_up = x.sort(dim=_dim)[0]
-        #if (self._print == True and self.idx == 0):
-        #    print("x_up=", x_up)
-        #ggf = torch.inner(w, x_up)
-        #print("act0=", x_up[0][0]*w[0] + x_up[1][0]*w[1] + x_up[2][0]*w[2])
-        #print("act1=", x_up[0][1]*w[0] + x_up[1][1]*w[1] + x_up[2][1]*w[2])
+        #print("x up=", x_up.shape)
         ggf = torch.matmul(w, x_up)
         #print("ggf=", ggf)
-        #if (self.idx == 0):
-        #    print("act vals=", x, x.shape)
-        #    print("reordered=", x_up)
-        #    print("ggf=", ggf)
-        #if (self._print == True and self.idx == 0):
-        #    print("DONE")
+
         return ggf
 
-    def append_to_replay(self, s, a, r, s_, d):
+    def to_actions(self, a):
+        actions = torch.empty(self.n_active_agents)
+        for i in range(self.n_active_agents):
+            actions[i] = torch.Tensor([self.possibilities[int(a)][i]])
+        return actions
+
+    def append_to_replay(self, s, a, r, s_, d, act_ag_idx):
         self.memory._states[self.memory.i] = s
         self.memory._actions[self.memory.i] = a
-        self.memory._rewards[self.memory.i] = r  # like tensor([9.8826, 0.0000])
         self.memory._next_states[self.memory.i] = s_
         self.memory._dones[self.memory.i] = d
+
+        for a in range(self.n_active_agents):
+            self.memory._rewards[self.memory.i, a] = r['agent_'+str(act_ag_idx[a])]  # like tensor([9.8826, 0.0000])
+
+        #print("self.memory._rewards",self.memory._rewards)
         self.memory.i += 1
 
     def prep_minibatch(self):
@@ -218,32 +234,30 @@ class MoDQN():
         batch_state, batch_action, batch_reward, batch_dones, non_final_next_states, non_final_mask, empty_next_state_values = batch_vars
         #print("batch_state=",batch_state)
         
-        current_q_values = self.policy_act.get_values(batch_state).view(self.batch_size, self.num_objectives, self.action_size)
+        current_q_values = self.policy_act.get_values(batch_state).view(self.batch_size, self.num_objectives, self.n_active_agents, self.action_size**self.n_active_agents) 
         if (self._print == True and self.idx == 0):
-            print("current_q_values",current_q_values, current_q_values.shape)
-            print("scal val used to take act", self.scal_func(current_q_values, self.w))
-        #scalarized_q_values = self.scal_func(current_q_values, self.w)
-        #print("scal vals=",scalarized_q_values)
-        #print("batch_actions=", batch_action, batch_action.shape)
-        #ba = torch.Tensor([[1.],[0.]])
-        batch_action = batch_action.repeat(1, self.num_objectives).view(self.batch_size, self.num_objectives, 1)
-        current_q_values = torch.gather(current_q_values, dim=2, index=batch_action)
+            print("current_q_values",current_q_values.shape)
+            #print("scal val used to take act", self.scal_func(current_q_values, self.w))
+        
+        #print("batch_action=",batch_action)
+        batch_action = batch_action.repeat(1, self.num_objectives*self.n_active_agents).view(self.batch_size, self.num_objectives, self.n_active_agents, 1)
+        current_q_values = torch.gather(current_q_values, dim=3, index=batch_action)
         if (self._print == True and self.idx == 0):
-            print("batch_actions=", batch_action, batch_action.shape)
-            print("vals filtered by acts=",current_q_values)
+            print("batch_action.repeat=",batch_action.shape)
+            print("vals filtered by acts=",current_q_values.shape)
             
         #compute target
         with torch.no_grad():
-            max_next_q_values = torch.zeros((self.batch_size, self.num_objectives, 1), device=self.device, dtype=torch.float)#.unsqueeze(dim=1)
+            max_next_q_values = torch.zeros((self.batch_size, self.num_objectives, self.n_active_agents, 1), device=self.device, dtype=torch.float)#.unsqueeze(dim=1)
             #print("max_next_q_values (empty)=",max_next_q_values)
             if not empty_next_state_values:
                 # first we gotta compute MAX NEXT ACTION
                 max_next_action = self.get_max_next_state_action(non_final_next_states)
                 if (self._print == True and self.idx == 0):
-                    print("non_final_next_states=",non_final_next_states)
+                    print("non_final_next_states=",non_final_next_states.shape)
                     print("max_next_action=",max_next_action, max_next_action.shape)
                 max_next_action = max_next_action.repeat(1, self.num_objectives).view(self.batch_size, self.num_objectives, 1)
-                dist = self.policy_act_target.get_values(state=non_final_next_states).view(self.batch_size, self.num_objectives, self.action_size) #.act(state=non_final_next_states, greedy=False, get_distrib=True)
+                dist = self.policy_act_target.get_values(state=non_final_next_states).view(self.batch_size, self.num_objectives, self.n_active_agents, 1)
                 if (self._print == True and self.idx == 0):
                     print("max_next_action reshape=",max_next_action, max_next_action.shape)
                     print("dist=",dist, dist.shape)
@@ -252,19 +266,39 @@ class MoDQN():
                 for i in range(len(batch_dones)):
                     if (batch_dones[i] == torch.Tensor([True])):
                         max_next_q_values[i] = 0.
-            if (self._print == True and self.idx == 0):
-                #print("batch_reward=",batch_reward.unsqueeze(0), batch_reward.unsqueeze(-1).shape)
-                # fin qui ok
-                print("max_next_q_values=",max_next_q_values, max_next_q_values.shape)
                 ##print("current_q_values=",current_q_values, current_q_values.shape)
             if (self._print == True and self.idx == 0):
-                #print("batch_reward.unsqueeze(-1)", batch_reward.unsqueeze(-1))
+                print("max_next_q_values=", max_next_q_values.shape)
                 print("self.gamma*max_next_q_values=",(self.gamma*max_next_q_values).shape)
-                print("batch_reward.shape=",batch_reward.shape)
 
-            expected_q_values = batch_reward.unsqueeze(-1) + self.gamma*max_next_q_values
+            #scalarize batch rewards
+            batch_reward_for_update = torch.zeros((self.batch_size, self.num_objectives, self.n_active_agents, 1))
+            batch_scal_rewards_agents = torch.zeros((self.batch_size, self.n_active_agents))
+            for j in range(self.batch_size):
+                for i in range(self.n_active_agents):
+                    #print("self.scal_func_agents[i](batch_reward[:,i,:])=",self.scal_func_agents[i](batch_reward[j,i,:], self.w_agents))
+                    batch_scal_rewards_agents[j,i] = self.scal_func_agents[i](batch_reward[j,i,:],self.w_agents)
+                #print('batch_scal_rewards[:,i] =',batch_scal_rewards[:,i] )
+            #print("batch_scal_rewards_agents=", batch_scal_rewards_agents.shape)
+
+            batch_scal_rewards = torch.zeros((self.batch_size))
+            for j in range(self.batch_size):
+                #print("batch_scal_rewards_agents[i]=",batch_scal_rewards_agents[j])
+                batch_scal_rewards[j] = self.scal_func(batch_scal_rewards_agents[j], self.w, _dim=0)
+                #print('batch_scal_rewards=',batch_scal_rewards)
+                batch_reward_for_update[j, :, :] = batch_scal_rewards[j]
+                #print('batch_reward_for_update=',batch_reward_for_update)
+            #print("batch_scal_rewards=",batch_scal_rewards)
+
+            # probably, I have to repeat the final reward for all the state-action stuff I have. So I use repeat
+            #batch_scal_rewards = batch_scal_rewards.repeat(self.num_objectives*self.n_active_agents)#.unsqueeze(-1)
+            #print("batch_scal_rewards=",batch_scal_rewards.shape)
+            
+            expected_q_values = batch_scal_rewards + self.gamma*max_next_q_values
             if (self._print == True and self.idx == 0):
-                print("expected_q_values=",expected_q_values)
+                print("batch_reward_for_update.shape=", batch_reward_for_update.shape)
+                print("batch_reward=",batch_reward.shape)
+                print("expected_q_values=",expected_q_values.shape)
 
         diff = (expected_q_values - current_q_values)
         loss = self.MSE(diff)
@@ -308,7 +342,7 @@ class MoDQN():
 
     def get_max_next_state_action(self, next_states):
        
-        next_vals = self.policy_act_target.get_values(state=next_states).view(self.batch_size, self.num_objectives,self.action_size) ##.act(state=next_states, greedy=False, get_distrib=True)
+        next_vals = self.policy_act_target.get_values(state=next_states).view(self.batch_size, self.num_objectives, self.n_active_agents, self.action_size**self.n_active_agents) 
         scalarized_next_vals = self.scal_func(next_vals, self.w)
         max_vals = scalarized_next_vals.max(dim=1)[1]#.view(-1, 1)
         if (self._print == True and self.idx == 0):
