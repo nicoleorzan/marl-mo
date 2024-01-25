@@ -171,7 +171,7 @@ class MoDQN():
 
         return torch.Tensor([action])
         
-    def linear(self, x, w):
+    def linear(self, x, w, _dim=0):
         #print("w=", w)
         #print("x=", x)
         out = torch.matmul(w, x)
