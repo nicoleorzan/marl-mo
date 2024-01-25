@@ -61,7 +61,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
     n_certain_agents = args.uncertainties.count(0.)
     n_uncertain = args.n_agents - n_certain_agents
-    assert(args.n_active_agents < args.n_agents)
+    assert(args.n_active_agents <= args.n_agents)
 
     # if GGF is employed
     if (args.scalarization_function == "ggf"):
