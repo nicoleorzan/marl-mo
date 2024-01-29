@@ -8,7 +8,7 @@ from optuna.storages import JournalStorage, JournalFileStorage
 import wandb
 from src.algos.normativeagent import NormativeAgent
 from src.utils.social_norm import SocialNorm
-from src.utils.utils import pick_agents_idxs, introspective_rewards
+from src.utils.utils import pick_agents_idxs_two_agents, introspective_rewards
 from src.experiments.params import setup_training_hyperparams
 
 torch.autograd.set_detect_anomaly(True)
@@ -141,7 +141,7 @@ def objective(args, repo_name, trial=None):
         #print("\n==========>Epoch=", epoch)
 
         # pick a pair of agents
-        active_agents_idxs = pick_agents_idxs(config)
+        active_agents_idxs = pick_agents_idxs_two_agents(config)
         active_agents = {"agent_"+str(key): agents["agent_"+str(key)] for key, _ in zip(active_agents_idxs, agents)}
 
         [agent.reset() for _, agent in active_agents.items()]

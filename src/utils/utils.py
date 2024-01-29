@@ -54,7 +54,7 @@ def introspective_rewards(config, observations, active_agents, parallel_env, rew
     #print("new_rewards=",new_rewards)
     return new_rewards
 
-def pick_agents_idxs(config):
+def pick_agents_idxs_two_agents(config):
 
     active_agents_idxs = []
     if (config.non_dummy_idxs != []):

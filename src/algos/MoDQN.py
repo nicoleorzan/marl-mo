@@ -46,6 +46,9 @@ class MoDQN():
             self.input_act = 1
         else: 
             self.input_act = 2
+        
+        if (self.old_actions_in_input == True):
+            self.input_act += self.num_active_agents-1 # I add as input the old actions of the agents I an playing against
         print("input_act=",self.input_act)
 
         _output_size = self.action_size*self.num_objectives
@@ -90,6 +93,7 @@ class MoDQN():
         self.memory.reset()
         self.memory.i = 0
         self.idx_mf = 0
+        self.previous_action = torch.Tensor([0])
 
     def argmax(self, q_values):
         #if (self.idx == 0):
@@ -114,9 +118,10 @@ class MoDQN():
         if (self._print == True and self.idx == 0):
             print("take action")
 
+        #print("state_act=",state_act)
         #self.state_act = self.state_act.view(-1,self.input_act)
         state_act = state_act.view(-1,self.input_act)
-        #print("state_act=",state_act)
+        #print("after state_act=",state_act)
 
         if (_eval == True):
             # WE HAVE TO ADD 1 TO COMPENSATE FOR THE BATCH SIZE!!!
@@ -142,6 +147,8 @@ class MoDQN():
                     print("act_val=", act_values)
                     print("scalarized_action_val=",scalarized_action_val)
                     print("action=", action)
+
+        self.previous_action = action
                 
         return torch.Tensor([action])
         

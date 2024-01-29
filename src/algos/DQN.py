@@ -50,6 +50,9 @@ class DQN():
             self.input_act = 2
         print("input_act=",self.input_act)
 
+        if (self.old_actions_in_input == True):
+            self.input_act += self.num_active_agents-1 # I add as input the old actions of the agents I an playing against
+
         self.policy_act = Actor(params=params, input_size=self.input_act, output_size=self.action_size, \
             n_hidden=self.n_hidden_act, hidden_size=self.hidden_size_act).to(device)
         self.policy_act_target = copy.deepcopy(self.policy_act).to(device)
@@ -81,8 +84,8 @@ class DQN():
     def reset(self):
         self.memory.reset()
         self.memory.i = 0
-        #self.observed_mult_factors = torch.zeros(self.num_game_iterations)
         self.idx_mf = 0
+        self.previous_action = torch.Tensor([0])
 
     def argmax(self, q_values):
         top = torch.Tensor([-10000000])

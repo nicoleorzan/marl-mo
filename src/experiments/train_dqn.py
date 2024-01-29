@@ -9,7 +9,7 @@ from optuna.storages import JournalStorage, JournalFileStorage
 import wandb
 from src.algos.normativeagent import NormativeAgent
 from src.utils.social_norm import SocialNorm
-from src.utils.utils import pick_agents_idxs, introspective_rewards
+from src.utils.utils import pick_agents_idxs_two_agents, introspective_rewards
 from src.experiments.params import setup_training_hyperparams
 
 torch.autograd.set_detect_anomaly(True)
@@ -51,6 +51,15 @@ def interaction_loop(config, parallel_env, active_agents, active_agents_idxs, so
                 next_states[idx_agent] = torch.cat((other.reputation, observations[idx_agent]))
             else: 
                 next_states[idx_agent] = observations[idx_agent]
+        if (config.old_actions_in_input == True):
+            #print("active_agents_idxs=",active_agents_idxs)
+            #print("_id=",idx_agent)
+            others_acts = torch.stack([torch.Tensor([active_agents["agent_"+str(_id)].previous_action ]) for _id in active_agents_idxs if "agent_"+str(_id)!=idx_agent], dim=1).squeeze(0)
+            #print('others_acts=',others_acts)
+            #print("next_states[idx_agent]=",next_states[idx_agent])
+            next_states[idx_agent] = torch.cat((next_states[idx_agent], others_acts))
+            #print("next_states[idx_agent]=",next_states[idx_agent])
+            
 
     done = False
     for i in range(config.num_game_iterations):
@@ -98,6 +107,15 @@ def interaction_loop(config, parallel_env, active_agents, active_agents_idxs, so
                     next_states[idx_agent] = torch.cat((other.reputation, observations[idx_agent]))
                 else: 
                     next_states[idx_agent] = observations[idx_agent]
+            if (config.old_actions_in_input == True):
+                #print("active_agents_idxs=",active_agents_idxs)
+                #print("_id=",idx_agent)
+                others_acts = torch.stack([torch.Tensor([active_agents["agent_"+str(_id)].previous_action ]) for _id in active_agents_idxs if "agent_"+str(_id)!=idx_agent], dim=1).squeeze(0)
+                #print('others_acts=',others_acts)
+                #print("next_states[idx_agent]=",next_states[idx_agent])
+                next_states[idx_agent] = torch.cat((next_states[idx_agent], others_acts))
+                #print("next_states[idx_agent]=",next_states[idx_agent])
+            
         
         if (_eval == False):
             # save iteration
@@ -146,7 +164,7 @@ def objective(args, repo_name, trial=None):
         #print("\n==========>Epoch=", epoch)
 
         # pick a pair of agents
-        active_agents_idxs = pick_agents_idxs(config)
+        active_agents_idxs = pick_agents_idxs_two_agents(config)
         #print("active_agents_idxs=",active_agents_idxs)
         active_agents = {"agent_"+str(key): agents["agent_"+str(key)] for key, _ in zip(active_agents_idxs, agents)}
 
