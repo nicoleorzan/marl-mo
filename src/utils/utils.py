@@ -2,6 +2,7 @@ import torch
 import itertools
 import numpy as np
 import random
+import copy
 
 def linear(r, w):
     utility = 0
@@ -63,6 +64,18 @@ def pick_agents_idxs_two_agents(config):
         first_agent_idx = random.sample([i for i in range(config.n_agents)], 1)[0]
     second_agent_idx = random.sample( list(set(range(0, config.n_agents)) - set([first_agent_idx])) , 1)[0]
     active_agents_idxs = [first_agent_idx, second_agent_idx]
+
+    return active_agents_idxs
+
+def pick_agents_idxs(config):
+
+    active_agents_idxs = []
+    indices = copy.deepcopy(config.non_dummy_idxs)
+    for _ in range(config.num_active_agents):
+        if (indices != []):
+            ag = random.sample(indices, 1)[0]
+            indices.remove(ag)
+            active_agents_idxs.append(ag)
 
     return active_agents_idxs
 

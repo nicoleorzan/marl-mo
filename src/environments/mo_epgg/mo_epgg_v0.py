@@ -5,7 +5,7 @@ from pettingzoo.utils import wrappers
 import supersuit as ss
 from pettingzoo.utils import parallel_to_aec
 import random
-from torch.distributions import uniform, normal
+from torch.distributions import normal
 import torch
 
 # set device to cpu or cuda
@@ -131,8 +131,9 @@ class parallel_env(ParallelEnv):
                 obs_multiplier = max(self.mult_fact)
 
             assert(obs_multiplier >= 0.)
-            #self.observations[agent] = torch.Tensor((self.normalized_coins[agent], obs_multiplier)).to(device) 
-            self.observations[agent] = torch.Tensor([obs_multiplier]).to(device) 
+            obs_normalized_multiplier = (obs_multiplier - min(self.mult_fact))/(max(self.mult_fact) - min(self.mult_fact))
+            self.observations[agent] = torch.Tensor([obs_normalized_multiplier]).to(device) 
+            #self.observations[agent] = torch.Tensor([obs_multiplier]).to(device) 
 
     def get_multiplier(self):
         return round(torch.Tensor([self.current_multiplier]).item(),2)

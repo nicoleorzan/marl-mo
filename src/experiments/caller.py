@@ -61,7 +61,7 @@ if __name__ == '__main__':
     n_certain_agents = args.uncertainties.count(0.)
     n_uncertain = args.n_agents - n_certain_agents
 
-    assert (args.num_active_agents == 2) 
+    #assert (args.num_active_agents == 2) 
 
     # if GGF is employed
     if (args.scalarization_function == "ggf"):
