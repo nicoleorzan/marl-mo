@@ -38,7 +38,8 @@ def setup_training_hyperparams(args, trial):
         scalarization_function = args.scalarization_function,
         mf_from_interval = args.mf_from_interval,
         print_step = args.print_step,
-        weights = args.weights
+        weights = args.weights,
+        beta = args.beta
         #_print = args._print
     )
 

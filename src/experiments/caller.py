@@ -25,7 +25,7 @@ if __name__ == '__main__':
     parser.add_argument('--optuna_', type=int, default=0)
     parser.add_argument('--num_epochs', type=int, default=200)
     parser.add_argument('--num_game_iterations', type=int, default=1)
-    parser.add_argument('--num_active_agents', type=int, default=2) # for now only 2 is available
+    parser.add_argument('--num_active_agents', type=int, default=2) 
     parser.add_argument('--num_objectives', type=int, choices = [1, 2, 3], default=1)
     parser.add_argument('--reputation_enabled', type=int, default=0)
     parser.add_argument('--coins_value', type=float, default=4.)
@@ -40,10 +40,11 @@ if __name__ == '__main__':
     parser.add_argument('--reputation_assignment', type=int, choices = [0, 1], default=0) # 1 for true 0 for false
     parser.add_argument('--old_actions_in_input', type=int, choices = [0, 1], default=0) # 1 for true 0 for false
     parser.add_argument('--mf_from_interval', type=int, choices = [0, 1], default=0) # 1 for true 0 for false
-    parser.add_argument('--scalarization_function', type=str, choices = ["linear", "ggf"], default="linear")
+    parser.add_argument('--scalarization_function', type=str, choices = ["linear", "ggf", "non-linear-pgg"], default="linear")
     parser.add_argument('--print_step', type=int, default=50)
     parser.add_argument('--epsilon_dqn', type=float, default=0.01)
     parser.add_argument('--lr_dqn', type=float, default=0.001)
+    parser.add_argument('--beta', type=float, default=1) # 1 for linear, <1 for concavity, >1 for convexity
     #parser.add_argument('--_print', type=int, choices = [0, 1], default=0) # 1 yes 0 no
     parser.add_argument( # to fill with values of weights for every objective (can be 0.)
         "--weights",
@@ -61,7 +62,7 @@ if __name__ == '__main__':
     n_certain_agents = args.uncertainties.count(0.)
     n_uncertain = args.n_agents - n_certain_agents
 
-    #assert (args.num_active_agents == 2) 
+    assert (args.num_active_agents <= args.num_active_agents) 
 
     # if GGF is employed
     if (args.scalarization_function == "ggf"):

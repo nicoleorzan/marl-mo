@@ -1,4 +1,5 @@
 from src.environments import mo_epgg_v0
+#from src.environments import threshold_mo_epgg_v0
 from src.algos.MoDQN import MoDQN
 from src.algos.DQN import DQN
 import numpy as np
@@ -134,8 +135,9 @@ def interaction_loop(config, parallel_env, active_agents, active_agents_idxs, so
                     #print("rewards_dict=", rewards_dict)
                     #print("avg_reward=",avg_reward[ag_idx])
                     #computing scalarization function, after expectation (SER)
+                    #print("HERE")
                     if (config.num_objectives > 1):
-                        scal_func[ag_idx] = agent.scal_func(avg_reward[ag_idx], agent.w)
+                        scal_func[ag_idx] = agent.scal_func(avg_reward[ag_idx].unsqueeze(0), agent.w)
                     #print("scal func=", scal_func)
             break
 
@@ -150,6 +152,9 @@ def objective(args, repo_name, trial=None):
     print("config=", config)
 
     # define envupdate_
+    #if (config.non_linear_env == 1):
+    #    parallel_env = threshold_mo_epgg_v0.parallel_env(config)
+    #else:
     parallel_env = mo_epgg_v0.parallel_env(config)
 
     # define agents
@@ -192,13 +197,13 @@ def objective(args, repo_name, trial=None):
             #print("==>avg_rew over loop=", avg_rew)
             avg_rep = np.mean([agent.reputation[0] for _, agent in agents.items() if (agent.is_dummy == False)])
             measure = avg_rep
-            #print("avg_coop=", avg_coop)
+            #print("===============>avg_coop=", avg_coop)
             coop_agents_mf[mf_input] = avg_coop
             rew_agents_mf[mf_input] = avg_rew
             scal_func_mf[mf_input] = scal_func
         #print("rew_agents_mf=",rew_agents_mf)
         #print("scal_func_mf=",scal_func_mf)
-        #print("END EVAL")
+        #print("\n======>END EVAL\n")
 
         dff_coop_per_mf = dict(("avg_coop_mf"+str(mf), torch.mean(torch.stack([ag_coop for _, ag_coop in coop_agents_mf[mf].items()]))) for mf in config.mult_fact)
         dff_rew_per_mf = dict(("avg_rew_mf"+str(mf), torch.mean(torch.stack([ag_coop for _, ag_coop in rew_agents_mf[mf].items()]))) for mf in config.mult_fact)
@@ -275,7 +280,7 @@ def train_dqn(args):
     if (args.uncertainties.count(0.) != args.n_agents):
         unc_string = "unc_"
 
-    repo_name = "MO-EPGG_"+ str(args.n_agents) + "agents_" + \
+    repo_name = "NEW_MO-EPGG_"+ str(args.n_agents) + "agents_" + \
         unc_string + args.algorithm + "_mf" + str(args.mult_fact) + \
         "_rep" + str(args.reputation_enabled) + "_n_act_agents" + str(args.num_active_agents)
     

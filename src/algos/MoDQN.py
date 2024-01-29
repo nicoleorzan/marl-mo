@@ -86,6 +86,8 @@ class MoDQN():
             self.scal_func = self.linear
         elif (self.scalarization_function == "ggf"):
             self.scal_func = self.GGF
+        elif (self.scalarization_function == "non-linear-pgg"):
+            self.scal_func = self.non_linear_pgg
 
         self._print =  False
 
@@ -160,9 +162,21 @@ class MoDQN():
             return out
         
     def linear(self, x, w):
-        #print("w=", w)
-        #print("x=", x)
+        #print("w=", w.shape)
+        #print("x=", x.shape)
+        #print('x[:,0]=',x[:,0])
         out = torch.matmul(w, x)
+        #print("out=", out)
+        return out
+    
+    def non_linear_pgg(self, x, w):
+        #print("w=", w.shape)
+        #print("x=", x.shape)
+        #print('x[:,0]=',x[:,0])
+        if (x.shape[1] == 2):
+            out = (w[0]*x[:,0])**self.beta + w[1]*x[:,1]
+        elif (x.shape[1] == 3):
+            out = (w[0]*x[:,0])**self.beta + w[1]*x[:,1] + w[2]*x[:,2]
         #print("out=", out)
         return out
         
