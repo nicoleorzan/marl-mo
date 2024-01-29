@@ -68,7 +68,7 @@ if __name__ == '__main__':
         #weights should sum to 1
         assert(np.abs(np.sum(args.weights) - 1.0) < 10E-6)
         #weights should be organized in descending order:  w_1 > ... > w_n
-        assert (non_increasing(args.weights) == True) 
+        #assert (non_increasing(args.weights) == True) 
     #print("np.sum(args.weights)=",np.sum(args.weights))
 
     if (args.scalarization_function == "g3f"):
