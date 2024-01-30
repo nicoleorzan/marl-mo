@@ -64,6 +64,9 @@ if __name__ == '__main__':
 
     assert (args.num_active_agents <= args.num_active_agents) 
 
+    if (args.scalarization_function == "non-linear-pgg"):
+        assert(len(args.weights) == 3)
+
     # if GGF is employed
     if (args.scalarization_function == "ggf"):
         #weights should sum to 1

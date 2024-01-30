@@ -14,42 +14,25 @@ class Actor(nn.Module):
         self.n_hidden = n_hidden
         self.hidden_size = hidden_size
         self.softmax = nn.Softmax(dim=1)
-        #print("input size=", input_size)
-        #print("output size=", output_size)
 
         self.embedding = nn.Embedding(num_embeddings=2, embedding_dim=self.embedding_dim)
 
-        #if hasattr(self, 'dqn_activation_function'):
-        #if (self.dqn_activation_function == "relu"):
         if (self.n_hidden == 2):
             self.actor = nn.Sequential(
                 nn.Linear(self.input_size, self.hidden_size),
                 nn.ReLU(),
                 nn.Linear(self.hidden_size, self.hidden_size),
                 nn.ReLU(),
-                nn.Linear(self.hidden_size, self.output_size)
+                nn.Linear(self.hidden_size, self.output_size),
+                nn.Softplus() #https://pytorch.org/docs/stable/generated/torch.nn.Softplus.html
             )
         else:
             self.actor = nn.Sequential(
                 nn.Linear(self.input_size, self.hidden_size),
                 nn.ReLU(),
-                nn.Linear(self.hidden_size, self.output_size)
+                nn.Linear(self.hidden_size, self.output_size),
+                nn.Softplus()
             )
-        #elif (self.dqn_activation_function == "tanh"):
-        """    if (self.n_hidden == 2):
-                self.actor = nn.Sequential(
-                    nn.Linear(self.input_size, self.hidden_size),
-                    nn.Tanh(),
-                    nn.Linear(self.hidden_size, self.hidden_size),
-                    nn.Tanh(),
-                    nn.Linear(self.hidden_size, self.output_size)
-                )
-            else:
-                self.actor = nn.Sequential(
-                    nn.Linear(self.input_size, self.hidden_size),
-                    nn.Tanh(),
-                    nn.Linear(self.hidden_size, self.output_size)
-                )"""
 
     def act(self, state, greedy=False, get_distrib=False):
         out = self.actor(state)
@@ -78,7 +61,6 @@ class Actor(nn.Module):
         return dist.entropy()
 
     def get_distribution(self, state):
-        #print("state1=", state)
         out = self.actor(state)
         out = self.softmax(out)
         return out

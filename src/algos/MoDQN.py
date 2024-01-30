@@ -120,10 +120,8 @@ class MoDQN():
         if (self._print == True and self.idx == 0):
             print("take action")
 
-        #print("state_act=",state_act)
         #self.state_act = self.state_act.view(-1,self.input_act)
         state_act = state_act.view(-1,self.input_act)
-        #print("after state_act=",state_act)
 
         if (_eval == True):
             # WE HAVE TO ADD 1 TO COMPENSATE FOR THE BATCH SIZE!!!
@@ -172,11 +170,7 @@ class MoDQN():
     def non_linear_pgg(self, x, w):
         #print("w=", w.shape)
         #print("x=", x.shape)
-        #print('x[:,0]=',x[:,0])
-        if (x.shape[1] == 2):
-            out = (w[0]*x[:,0])**self.beta + w[1]*x[:,1]
-        elif (x.shape[1] == 3):
-            out = (w[0]*x[:,0])**self.beta + w[1]*x[:,1] + w[2]*x[:,2]
+        out = (w[0]*x[:,0]*self.num_active_agents)**self.beta/self.num_active_agents + w[1]*x[:,1] + w[2]*x[:,2]
         #print("out=", out)
         return out
         
