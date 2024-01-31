@@ -93,6 +93,7 @@ class MoDQN():
 
         self._print =  False
 
+        #print("betas=", self.betas)
         self.beta = self.betas[self.idx]
 
     def reset(self):

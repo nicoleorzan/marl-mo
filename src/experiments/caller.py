@@ -66,6 +66,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
     n_certain_agents = args.uncertainties.count(0.)
     n_uncertain = args.n_agents - n_certain_agents
+    assert(len(args.betas) == args.n_agents )
 
     assert (args.num_active_agents <= args.num_active_agents) 
 
@@ -78,12 +79,6 @@ if __name__ == '__main__':
         assert(np.abs(np.sum(args.weights) - 1.0) < 10E-6)
         #weights should be organized in descending order:  w_1 > ... > w_n
         #assert (non_increasing(args.weights) == True) 
-    #print("np.sum(args.weights)=",np.sum(args.weights))
-
-    if (args.scalarization_function == "g3f"):
-        assert (non_increasing(args.weights) == True) 
-        assert(np.abs(np.sum(args.weights) - 1.0) < 10E-6)
-        assert(np.abs(np.sum(args.p_weights) - 1.0) < 10E-6)
     
     assert(args.proportion_dummy_agents >= 0.)    
     assert(args.proportion_dummy_agents <= 1.)
