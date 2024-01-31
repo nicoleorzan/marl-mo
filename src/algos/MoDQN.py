@@ -93,6 +93,8 @@ class MoDQN():
 
         self._print =  False
 
+        self.beta = self.betas[self.idx]
+
     def reset(self):
         self.memory.reset()
         self.memory.i = 0
