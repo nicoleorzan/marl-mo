@@ -39,7 +39,7 @@ def setup_training_hyperparams(args, trial):
         mf_from_interval = args.mf_from_interval,
         print_step = args.print_step,
         weights = args.weights,
-        beta = args.beta
+        betas = args.betas
         #_print = args._print
     )
 
