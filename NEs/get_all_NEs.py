@@ -10,7 +10,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('-folder', type=str, default='data', help="Folder to save data in.")
     # parser.add_argument('-f', type=float, default=0.5, help="The f value of the game.")
-    parser.add_argument('-res_strategy', type=float, default=0.01, help="Strategy resolution")
+    parser.add_argument('-res_strategy', type=float, default=0.001, help="Strategy resolution")
     # parser.add_argument('-beta', type=float, default=0.5, help="Beta value for the utility function")
 
     args = parser.parse_args()
@@ -24,6 +24,7 @@ if __name__ == "__main__":
 
     for f in [0.5, 1.5, 2.5]:
         for beta in [0.5, 1, 2]:
+            print('Running for f =', f, 'and beta =', beta)
             if f == 0.5:
                 game = pgg_f_05
             elif f == 1.5:
@@ -40,7 +41,7 @@ if __name__ == "__main__":
             expected_payoffs = [[], []]
             for joint_strat in all_joint_strategies:
                 is_ne = verify_nash(game, utility_tuple, joint_strat)
-                if is_ne:
+                if is_ne or joint_strat[0][0] == 1 or joint_strat[1][0] == 1:
                     for player, (payoff_matrix, strat) in enumerate(zip(game.payoffs, joint_strat)):
                         expected_returns = calc_expected_returns(player, payoff_matrix, joint_strat)
                         # Expected vector under considered strategy
@@ -52,6 +53,6 @@ if __name__ == "__main__":
                                              round(ser, 5)])
 
             for player in [ROW_PLAYER, COL_PLAYER]:
-                file = f'{folder}/pgg_f{f}_NEs_res_s{res_strategy}_beta{beta}_player{player}.csv'
+                file = f'{folder}/pgg_f{f}_beta{beta}_NEs_res_s{res_strategy}__player{player}.csv'
                 df = pd.DataFrame(data[player], columns=columns)
                 df.to_csv(file, index=False)
