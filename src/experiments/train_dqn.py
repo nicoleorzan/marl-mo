@@ -1,5 +1,5 @@
 from src.environments import mo_epgg_v0
-#from src.environments import threshold_mo_epgg_v0
+from src.environments import sigmoid_mo_epgg_v0
 from src.algos.MoDQN import MoDQN
 from src.algos.DQN import DQN
 import numpy as np
@@ -152,10 +152,10 @@ def objective(args, repo_name, trial=None):
     print("config=", config)
 
     # define envupdate_
-    #if (config.non_linear_env == 1):
-    #    parallel_env = threshold_mo_epgg_v0.parallel_env(config)
-    #else:
-    parallel_env = mo_epgg_v0.parallel_env(config)
+    if (config.scalarization_function == "sigmoid"):
+        parallel_env = sigmoid_mo_epgg_v0.parallel_env(config)
+    else:
+        parallel_env = mo_epgg_v0.parallel_env(config)
 
     # define agents
     agents = define_agents(config)

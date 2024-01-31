@@ -88,6 +88,8 @@ class MoDQN():
             self.scal_func = self.GGF
         elif (self.scalarization_function == "non-linear-pgg"):
             self.scal_func = self.non_linear_pgg
+        elif (self.scalarization_function == "sigmoid"):
+            self.scal_func = self.sigmoid
 
         self._print =  False
 
@@ -168,6 +170,13 @@ class MoDQN():
         return out
     
     def non_linear_pgg(self, x, w):
+        #print("w=", w.shape)
+        #print("x=", x.shape)
+        out = w[0]*(x[:,0])**self.beta + w[1]*x[:,1] + w[2]*x[:,2]
+        #print("out=", out)
+        return out
+    
+    def sigmoid(self, x, w):
         #print("w=", w.shape)
         #print("x=", x.shape)
         out = (w[0]*x[:,0]*self.num_active_agents)**self.beta/self.num_active_agents + w[1]*x[:,1] + w[2]*x[:,2]
