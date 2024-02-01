@@ -49,7 +49,8 @@ if __name__ == '__main__':
     parser.add_argument('--print_step', type=int, default=50)
     parser.add_argument('--epsilon_dqn', type=float, default=0.01)
     parser.add_argument('--lr_dqn', type=float, default=0.001)
-    #parser.add_argument('--beta', type=float, default=1) # 1 for linear, <1 for concavity, >1 for convexity
+    parser.add_argument('--sigma_beta', type=float, default=0.5)
+    parser.add_argument('--betas_from_distrib', type=float, default=0) # 1 for linear, <1 for concavity, >1 for convexity
     #parser.add_argument('--_print', type=int, choices = [0, 1], default=0) # 1 yes 0 no
     parser.add_argument( # to fill with values of weights for every objective (can be 0.)
         "--weights",
@@ -66,7 +67,8 @@ if __name__ == '__main__':
     args = parser.parse_args()
     n_certain_agents = args.uncertainties.count(0.)
     n_uncertain = args.n_agents - n_certain_agents
-    assert(len(args.betas) == args.n_agents )
+    if (args.betas_from_distrib != 1):
+        assert(len(args.betas) == args.n_agents )
 
     assert (args.num_active_agents <= args.num_active_agents) 
 

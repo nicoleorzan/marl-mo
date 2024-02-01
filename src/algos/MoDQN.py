@@ -3,6 +3,7 @@ import copy
 import torch
 import random
 import numpy as np
+from torch.distributions import normal
 from collections import namedtuple
 
 # set device to cpu or cuda
@@ -94,7 +95,14 @@ class MoDQN():
         self._print =  False
 
         #print("betas=", self.betas)
-        self.beta = self.betas[self.idx]
+        if (self.betas_from_distrib):
+            d = normal.Normal(1., self.sigma_beta)
+            self.beta = d.sample()
+            if (self.beta < 0.):
+                self.beta = 0.            
+        else:
+            self.beta = self.betas[self.idx]
+        print("beta=", self.beta)
 
     def reset(self):
         self.memory.reset()
