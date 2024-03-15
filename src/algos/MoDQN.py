@@ -99,7 +99,7 @@ class MoDQN():
             d = normal.Normal(1., self.sigma_beta)
             self.beta = d.sample()
             if (self.beta < 0.):
-                self.beta = 0.            
+                self.beta = -self.beta          
         else:
             self.beta = self.betas[self.idx]
         print("beta=", self.beta)
