@@ -92,7 +92,7 @@ class MoDQN():
         elif (self.scalarization_function == "sigmoid"):
             self.scal_func = self.sigmoid
 
-        self._print =  False
+        self._print = False
 
         #print("betas=", self.betas)
         if (self.betas_from_distrib):
@@ -233,13 +233,20 @@ class MoDQN():
         batch_reward = self.memory._rewards
         batch_next_state = self.memory._next_states
         batch_dones = self.memory._dones
-        #print("batch_next_state=",batch_next_state)
+        #if (self._print == True and self.idx == 0):
+        #    print("batch_next_state=",batch_next_state)
         #print("batch_dones=",batch_dones)
+        #if (self._print == True and self.idx == 0):
+        #    print("[s for s in batch_next_state if s is not None]=",[s for s in batch_next_state if s is not None])
+        #    print("torch.stack([s for s in batch_next_state if s is not None])=", torch.stack([s for s in batch_next_state if s is not None]))
+        #print("torch.tensor([s for s in batch_next_state if s is not None]=",torch.tensor([s for s in batch_next_state if s is not None]))
         
         non_final_mask = torch.tensor(tuple(map(lambda s: s is not None, batch_next_state)), device=self.device, dtype=torch.uint8)
         try: #sometimes all next states are false
-            non_final_next_states = torch.tensor([s for s in batch_next_state if s is not None], device=self.device, dtype=torch.float).view(-1,1)
+            non_final_next_states = torch.stack([s for s in batch_next_state if s is not None])#.view(-1,1)
+            #non_final_next_states = torch.tensor([s for s in batch_next_state if s is not None], device=self.device, dtype=torch.float).view(-1,1)
             empty_next_state_values = False
+            #print("non_final_next_states=", non_final_next_states, non_final_next_states.shape)
         except:
             non_final_next_states = None
             empty_next_state_values = True
@@ -250,13 +257,15 @@ class MoDQN():
         return batch_state, batch_action, batch_reward, batch_dones, non_final_next_states, non_final_mask, empty_next_state_values
 
     def compute_loss(self, batch_vars):
+        if (self._print == True and self.idx == 0):
+            print("compute loss")
         batch_state, batch_action, batch_reward, batch_dones, non_final_next_states, non_final_mask, empty_next_state_values = batch_vars
         #print("batch_state=",batch_state)
         
         current_q_values = self.policy_act.get_values(batch_state).view(self.batch_size, self.num_objectives, self.action_size)
         if (self._print == True and self.idx == 0):
-            print("current_q_values",current_q_values, current_q_values.shape)
-            print("scal val used to take act", self.scal_func(current_q_values, self.w))
+            print("current_q_values", current_q_values.shape)
+            print("scal val used to take act", self.scal_func(current_q_values, self.w).shape)
         #scalarized_q_values = self.scal_func(current_q_values, self.w)
         #print("scal vals=",scalarized_q_values)
         #print("batch_actions=", batch_action, batch_action.shape)
@@ -264,23 +273,26 @@ class MoDQN():
         batch_action = batch_action.repeat(1, self.num_objectives).view(self.batch_size, self.num_objectives, 1)
         current_q_values = torch.gather(current_q_values, dim=2, index=batch_action)
         if (self._print == True and self.idx == 0):
-            print("batch_actions=", batch_action, batch_action.shape)
-            print("vals filtered by acts=",current_q_values)
+            print("batch_actions=", batch_action.shape)
+            print("current q values filtered by acts=", current_q_values.shape)
             
         #compute target
         with torch.no_grad():
             max_next_q_values = torch.zeros((self.batch_size, self.num_objectives, 1), device=self.device, dtype=torch.float)#.unsqueeze(dim=1)
             #print("max_next_q_values (empty)=",max_next_q_values)
+            if (self._print == True and self.idx == 0):
+                print("empty_next_state_values=",empty_next_state_values)
             if not empty_next_state_values:
+                #print("here")
                 # first we gotta compute MAX NEXT ACTION
                 max_next_action = self.get_max_next_state_action(non_final_next_states)
                 if (self._print == True and self.idx == 0):
-                    print("non_final_next_states=",non_final_next_states)
+                    print("non_final_next_states=",non_final_next_states.shape)
                     print("max_next_action=",max_next_action, max_next_action.shape)
                 max_next_action = max_next_action.repeat(1, self.num_objectives).view(self.batch_size, self.num_objectives, 1)
                 dist = self.policy_act_target.get_values(state=non_final_next_states).view(self.batch_size, self.num_objectives, self.action_size) #.act(state=non_final_next_states, greedy=False, get_distrib=True)
                 if (self._print == True and self.idx == 0):
-                    print("max_next_action reshape=",max_next_action, max_next_action.shape)
+                    print("max_next_action reshape=", max_next_action.shape)
                     print("dist=",dist, dist.shape)
                 #print("dist.gather(1, max_next_action)=",dist.gather(1, max_next_action),dist.gather(1, max_next_action).shape )
                 max_next_q_values[non_final_mask] = dist.gather(2, max_next_action)
@@ -299,7 +311,7 @@ class MoDQN():
 
             expected_q_values = batch_reward.unsqueeze(-1) + self.gamma*max_next_q_values
             if (self._print == True and self.idx == 0):
-                print("expected_q_values=",expected_q_values)
+                print("expected_q_values=",expected_q_values.shape)#, expected_q_values.shape)
 
         diff = (expected_q_values - current_q_values)
         loss = self.MSE(diff)
@@ -308,6 +320,7 @@ class MoDQN():
         return loss
 
     def update(self, _iter):
+        #print("here")
 
         batch_vars = self.prep_minibatch()
 
@@ -342,14 +355,14 @@ class MoDQN():
             self.policy_act_target.load_state_dict(self.policy_act.state_dict())
 
     def get_max_next_state_action(self, next_states):
-       
         next_vals = self.policy_act_target.get_values(state=next_states).view(self.batch_size, self.num_objectives,self.action_size) ##.act(state=next_states, greedy=False, get_distrib=True)
         scalarized_next_vals = self.scal_func(next_vals, self.w)
         max_vals = scalarized_next_vals.max(dim=1)[1]#.view(-1, 1)
         if (self._print == True and self.idx == 0):
-            print("next_vals=", next_vals)
-            print("scalarized_next_vals=", scalarized_next_vals)
-            print("max_vals=",max_vals)
+            print("GET MAX NEXT STATE ACTION")
+            print("next_vals=", next_vals.shape)
+            print("scalarized_next_vals=", scalarized_next_vals.shape)
+            print("max_vals=",max_vals.shape)
         self._print == True 
         return max_vals
     
