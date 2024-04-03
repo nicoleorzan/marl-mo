@@ -48,10 +48,9 @@ class DQN():
             self.input_act = 1
         else: 
             self.input_act = 2
-        print("input_act=",self.input_act)
-
         if (self.old_actions_in_input == True):
             self.input_act += self.num_active_agents-1 # I add as input the old actions of the agents I an playing against
+        print("input_act=",self.input_act)
 
         self.policy_act = Actor(params=params, input_size=self.input_act, output_size=self.action_size, \
             n_hidden=self.n_hidden_act, hidden_size=self.hidden_size_act).to(device)
@@ -81,11 +80,13 @@ class DQN():
         self.epsilon = self.eps0
         self.r = 1.-np.exp(np.log(self.final_epsilon/self.eps0)/self.num_epochs)
 
+        self.reset()
+
     def reset(self):
         self.memory.reset()
         self.memory.i = 0
         self.idx_mf = 0
-        self.previous_action = torch.Tensor([0])
+        self.return_episode = 0.
 
     def argmax(self, q_values):
         top = torch.Tensor([-10000000])
@@ -119,13 +120,11 @@ class DQN():
         return torch.Tensor([action])
     
     def get_action_distribution(self, state):
-
         with torch.no_grad():
             out = self.policy_act.get_distribution(state)
             return out
         
     def get_action_values(self, state):
-
         with torch.no_grad():
             out = self.policy_act.get_values(state)
             return out

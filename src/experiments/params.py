@@ -3,16 +3,12 @@ import torch
 ACTION_SIZE = 2
 RANDOM_BASELINE = False
 
-DEVICE = torch.device('cpu')
-if(torch.cuda.is_available()): 
-    DEVICE = torch.device('cuda:0') 
-    torch.cuda.empty_cache()
-
 def setup_training_hyperparams(args, trial):
 
     all_params = {}
 
     game_params = dict(
+        device = torch.device("cuda" if torch.cuda.is_available() and args.cuda else "cpu"),
         n_agents = args.n_agents,
         mult_fact = args.mult_fact,
         num_epochs = args.num_epochs,
@@ -34,21 +30,20 @@ def setup_training_hyperparams(args, trial):
         introspective = args.introspective,
         rule = args.rule,
         reputation_assignment = args.reputation_assignment,
-        device = DEVICE,
         scalarization_function = args.scalarization_function,
         mf_from_interval = args.mf_from_interval,
         print_step = args.print_step,
         weights = args.weights,
         betas = args.betas,
         betas_from_distrib = args.betas_from_distrib,
-        sigma_beta = args.sigma_beta
-        #_print = args._print
+        sigma_beta = args.sigma_beta,
+        seed = 123
     )
 
     if (args.algorithm == "reinforce"):  
         num_hidden_a = 1
         hidden_size_a = 4
-        obs_size = 2 # m factor and reputation
+        obs_size = 2 # m factor and action of other
         algo_params = dict(
             obs_size = obs_size,
             gamma = 0.999,
@@ -61,7 +56,7 @@ def setup_training_hyperparams(args, trial):
             )
 
     elif (args.algorithm == "dqn"):
-        obs_size = 2  # m factor and reputation
+        obs_size = 2  # m factor and action of other
         algo_params = dict(
             obs_size = obs_size, # mult factor and reputation of opponent
             gamma = 0.99,
@@ -69,7 +64,6 @@ def setup_training_hyperparams(args, trial):
             epsilon = args.epsilon_dqn,
             memory_size = 500,
             n_hidden_act = 1,
-            #freq_counts = args.freq_counts,
             hidden_size_act = 4,
             dqn_activation_function = args.dqn_activation_function,
             lr_actor = args.lr_dqn,
@@ -80,7 +74,7 @@ def setup_training_hyperparams(args, trial):
         )
 
     elif (args.algorithm == "q-learning"):
-        obs_size = 2  # m factor and reputation
+        obs_size = 2  # m factor and action of other
         algo_params = dict(
             obs_size = obs_size,
             gamma = 0.99,
@@ -90,11 +84,43 @@ def setup_training_hyperparams(args, trial):
             alpha = 0.1, # introspection level
         )
 
+    elif (args.algorithm == "ppo"):
+        obs_size = 2  # m factor and action of other
+        #num_steps = 10 #e` la stessa cosa di num_game_iterations
+        num_minibatches = 4
+        batch_size = args.num_game_iterations
+        total_timesteps = 500000
+        minibatch_size = batch_size #int(batch_size // num_minibatches)
+        algo_params = dict(
+            obs_size = obs_size,
+            gamma = 0.99,
+            chi = 0.001,
+            epsilon = 0.01,
+            lr_actor = 0.1,
+            hidden_size_act = 4,
+            #num_steps = num_steps, ##128, #the number of steps to run in each environment per policy rollout
+            gae_lambda = 0.95, #the lambda for the general advantage estimation
+            num_minibatches = num_minibatches, #the number of mini-batches
+            update_epochs = 4, #the K epochs to update the policy
+            norm_adv = True, #Toggles advantages normalization
+            clip_coef = 0.2, #the surrogate clipping coefficient
+            clip_vloss = True, #Toggles whether or not to use a clipped loss for the value function, as per the paper.
+            ent_coef = 0.01, #coefficient of the entropy
+            vf_coef = 0.5, #coefficient of the value function
+            max_grad_norm = 0.5, #the maximum norm for the gradient clipping
+            target_kl = None, #the target KL divergence threshold,
+            torch_deterministic = True, #if toggled, `torch.backends.cudnn.deterministic=False
+            total_timesteps = total_timesteps,
+            batch_size = batch_size, #the batch size (computed in runtime),
+            num_iterations = total_timesteps // batch_size, # SAREBBE IL NUMERO DI EPOCHE
+            minibatch_size = minibatch_size #the mini-batch size (computed in runtime)
+            #alpha = 0.1, # introspection level
+        )
+
     n_dummy = int(args.proportion_dummy_agents*args.n_agents)
     is_dummy = list(reversed([1 if i<n_dummy else 0 for i in range(args.n_agents) ]))
     non_dummy_idxs = [i for i,val in enumerate(is_dummy) if val==0]
 
     all_params = {**all_params, **game_params, **algo_params,  "n_dummy":n_dummy, "is_dummy":is_dummy, "non_dummy_idxs":non_dummy_idxs}
-    print("all_params=", all_params)
 
     return all_params

@@ -3,6 +3,8 @@ import numpy as np
 from src.experiments.train_reinforce import train_reinforce
 from src.experiments.train_q_learning import train_q_learning
 from src.experiments.train_dqn import train_dqn
+#from src.experiments.train_ppo import train_ppo
+from src.experiments.train_ppo_single_obj import train_ppo_single_obj
 
 def non_increasing(L):
     return all(x>y for x, y in zip(L, L[1:]))
@@ -39,14 +41,14 @@ if __name__ == '__main__':
     parser.add_argument('--wandb_mode', type=str, choices = ["online", "offline"], default="offline")
     parser.add_argument('--dqn_activation_function', type=str, choices = ["tanh", "relu"], default="tanh")
     parser.add_argument('--rule', type=str, choices = ["rule09", "rule11", "rule03", "rule00"], default="rule09")
-    parser.add_argument('--algorithm', type=str, choices = ["reinforce", "PPO", "dqn", "q-learning"], default="reinforce")
+    parser.add_argument('--algorithm', type=str, choices = ["reinforce", "ppo", "dqn", "q-learning"], default="reinforce")
     parser.add_argument('--optimize', type=int, choices = [0, 1], default=0) # 1 for true 0 for false
     parser.add_argument('--introspective', type=int, choices = [0, 1], default=0) # 1 for true 0 for false
     parser.add_argument('--reputation_assignment', type=int, choices = [0, 1], default=0) # 1 for true 0 for false
-    parser.add_argument('--old_actions_in_input', type=int, choices = [0, 1], default=0) # 1 for true 0 for false
+    parser.add_argument('--old_actions_in_input', type=int, choices = [0, 1], default=1) # 1 for true 0 for false
     parser.add_argument('--mf_from_interval', type=int, choices = [0, 1], default=0) # 1 for true 0 for false
     parser.add_argument('--scalarization_function', type=str, choices = ["linear", "ggf", "non-linear-pgg", "sigmoid"], default="linear")
-    parser.add_argument('--print_step', type=int, default=50)
+    parser.add_argument('--print_step', type=int, default=20)
     parser.add_argument('--epsilon_dqn', type=float, default=0.01)
     parser.add_argument('--lr_dqn', type=float, default=0.001)
     parser.add_argument('--sigma_beta', type=float, default=0.5)
@@ -101,3 +103,6 @@ if __name__ == '__main__':
         train_reinforce(args)    
     elif args.algorithm == "q-learning":
         train_q_learning(args)
+    elif args.algorithm == "ppo":
+        print("\n\n===============>TRAINING WITH SINGLE OBJECTIVE!!\n\n\n")
+        train_ppo_single_obj(args)

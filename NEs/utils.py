@@ -38,6 +38,7 @@ def mkdir_p(path):
 
 def u_beta(w, beta):
     # Had to add np.abs to avoid errors due to potential negative values when beta < 1, but p for us is always > 0
+    #print("(np.abs(p[0]) ** beta) =", (np.abs(p[0]) ** beta) )
     return lambda p: w[0] * (np.abs(p[0]) ** beta) + (w[1] * p[1])
 
 

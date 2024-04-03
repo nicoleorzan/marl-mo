@@ -1,5 +1,4 @@
 from src.environments import mo_epgg_v0
-from src.environments import sigmoid_mo_epgg_v0
 from src.algos.MoDQN import MoDQN
 from src.algos.DQN import DQN
 import numpy as np
@@ -10,11 +9,10 @@ from optuna.storages import JournalStorage, JournalFileStorage
 import wandb
 from src.algos.normativeagent import NormativeAgent
 from src.utils.social_norm import SocialNorm
-from src.utils.utils import pick_agents_idxs_two_agents, pick_agents_idxs, introspective_rewards
+from src.utils.utils import pick_agents_idxs, introspective_rewards
 from src.experiments.params import setup_training_hyperparams
 
 torch.autograd.set_detect_anomaly(True)
-
 
 def define_agents(config):
     agents = {}
@@ -39,12 +37,10 @@ def interaction_loop(config, parallel_env, active_agents, active_agents_idxs, so
     #print("observations=",observations)
     rewards_dict = {}
     actions_dict = {}
-    #if (_eval == False):
-    #    print("active_agents=", active_agents_idxs)
+
     states = {}; next_states = {}
     for idx_agent, agent in active_agents.items():
         other = active_agents["agent_"+str(list(set(active_agents_idxs) - set([agent.idx]))[0])]
-        #next_states[idx_agent] = torch.cat((observations[idx_agent], other.reputation))
         if (agent.is_dummy == True): 
             next_states[idx_agent] = torch.cat((other.reputation, torch.Tensor([parallel_env.current_multiplier])))
         else: 
@@ -53,30 +49,20 @@ def interaction_loop(config, parallel_env, active_agents, active_agents_idxs, so
             else: 
                 next_states[idx_agent] = observations[idx_agent]
         if (config.old_actions_in_input == True):
-            #print("active_agents_idxs=",active_agents_idxs)
-            #print("_id=",idx_agent)
             others_acts = torch.stack([torch.Tensor([active_agents["agent_"+str(_id)].previous_action ]) for _id in active_agents_idxs if "agent_"+str(_id)!=idx_agent], dim=1).squeeze(0)
-            #print('others_acts=',others_acts)
-            #print("next_states[idx_agent]=",next_states[idx_agent])
             next_states[idx_agent] = torch.cat((next_states[idx_agent], others_acts))
-            #print("next_states[idx_agent]=",next_states[idx_agent])
-            
 
     done = False
     for i in range(config.num_game_iterations):
-        #if (_eval == False):
-        #    if (i%50 ==0):
-        #print("i=", i)
         # state
         actions = {}; states = next_states
-        #for idx_agent, agent in active_agents.items():
-        #    agent.state_act = states[idx_agent]
-        #print("states=", states)
         
         # action
-        for agent in parallel_env.active_agents:
-            a = active_agents[agent].select_action(states[idx_agent],_eval)
-            actions[agent] = a
+        for idx_agent, agent in active_agents.items():
+            a = active_agents[idx_agent].select_action(states[idx_agent],_eval)
+            actions[idx_agent] = a
+        for ag_idx, agent in active_agents.items():
+            agent.previous_action = actions[ag_idx]
         #print("actions=", actions)
 
         # reward
@@ -84,7 +70,7 @@ def interaction_loop(config, parallel_env, active_agents, active_agents_idxs, so
         #print("rewards=", rewards)
         if (config.introspective == True):
             rewards = introspective_rewards(config, observations, active_agents, parallel_env, rewards, actions)
-        #print("rewards1=", rewards)
+
         if (_eval==True):
             for ag_idx in active_agents_idxs:       
                 if "agent_"+str(ag_idx) not in rewards_dict.keys():
@@ -109,15 +95,9 @@ def interaction_loop(config, parallel_env, active_agents, active_agents_idxs, so
                 else: 
                     next_states[idx_agent] = observations[idx_agent]
             if (config.old_actions_in_input == True):
-                #print("active_agents_idxs=",active_agents_idxs)
-                #print("_id=",idx_agent)
                 others_acts = torch.stack([torch.Tensor([active_agents["agent_"+str(_id)].previous_action ]) for _id in active_agents_idxs if "agent_"+str(_id)!=idx_agent], dim=1).squeeze(0)
-                #print('others_acts=',others_acts)
-                #print("next_states[idx_agent]=",next_states[idx_agent])
                 next_states[idx_agent] = torch.cat((next_states[idx_agent], others_acts))
-                #print("next_states[idx_agent]=",next_states[idx_agent])
-            
-        
+
         if (_eval == False):
             # save iteration
             for ag_idx, agent in active_agents.items():
@@ -132,10 +112,7 @@ def interaction_loop(config, parallel_env, active_agents, active_agents_idxs, so
                     avg_coop[ag_idx] = torch.mean(torch.stack(actions_dict[ag_idx]).float())
                     # computing avg_reward for every objective (expectation)
                     avg_reward[ag_idx] = torch.mean(torch.stack(rewards_dict[ag_idx]), dim=0).unsqueeze(1)
-                    #print("rewards_dict=", rewards_dict)
-                    #print("avg_reward=",avg_reward[ag_idx])
                     #computing scalarization function, after expectation (SER)
-                    #print("HERE")
                     if (config.num_objectives > 1):
                         scal_func[ag_idx] = agent.scal_func(avg_reward[ag_idx].unsqueeze(0), agent.w)
                     #print("scal func=", scal_func)
@@ -151,11 +128,8 @@ def objective(args, repo_name, trial=None):
     config = wandb.config
     print("config=", config)
 
-    # define envupdate_
-    if (config.scalarization_function == "sigmoid"):
-        parallel_env = sigmoid_mo_epgg_v0.parallel_env(config)
-    else:
-        parallel_env = mo_epgg_v0.parallel_env(config)
+    # define env
+    parallel_env = mo_epgg_v0.parallel_env(config)
 
     # define agents
     agents = define_agents(config)
@@ -168,9 +142,8 @@ def objective(args, repo_name, trial=None):
     for epoch in range(config.num_epochs):
         #print("\n==========>Epoch=", epoch)
 
-        # pick a pair of agents
+        # pick a group of agents
         active_agents_idxs = pick_agents_idxs(config)
-        #print("active_agents_idxs=",active_agents_idxs)
         active_agents = {"agent_"+str(key): agents["agent_"+str(key)] for key, _ in zip(active_agents_idxs, agents)}
 
         [agent.reset() for _, agent in active_agents.items()]
@@ -189,34 +162,30 @@ def objective(args, repo_name, trial=None):
 
         # evaluation step
         #print("\n\nEVAL")
-        #print("\n\n===================================>EVAL")
-        for mf_input in config.mult_fact:
-            #print("mf=", mf_input)
-            avg_rew, avg_coop, scal_func = interaction_loop(config, parallel_env, active_agents, active_agents_idxs, social_norm, True, mf_input)
-            avg_coop_tot = torch.mean(torch.stack([cop_val for _, cop_val in avg_coop.items()]))
-            #print("==>avg_rew over loop=", avg_rew)
-            avg_rep = np.mean([agent.reputation[0] for _, agent in agents.items() if (agent.is_dummy == False)])
-            measure = avg_rep
-            #print("===============>avg_coop=", avg_coop)
-            coop_agents_mf[mf_input] = avg_coop
-            rew_agents_mf[mf_input] = avg_rew
-            scal_func_mf[mf_input] = scal_func
-        #print("rew_agents_mf=",rew_agents_mf)
-        #print("scal_func_mf=",scal_func_mf)
-        #print("\n======>END EVAL\n")
+        if (float(epoch)%float(config.print_step) == 0.):
+            for mf_input in config.mult_fact:
+                avg_rew, avg_coop, scal_func = interaction_loop(config, parallel_env, active_agents, active_agents_idxs, social_norm, True, mf_input)
+                avg_coop_tot = torch.mean(torch.stack([cop_val for _, cop_val in avg_coop.items()]))
+                avg_rep = np.mean([agent.reputation[0] for _, agent in agents.items() if (agent.is_dummy == False)])
+                measure = avg_rep
+                coop_agents_mf[mf_input] = avg_coop
+                rew_agents_mf[mf_input] = avg_rew
+                scal_func_mf[mf_input] = scal_func
+            #print("rew_agents_mf=",rew_agents_mf)
+            #print("scal_func_mf=",scal_func_mf)
 
-        dff_coop_per_mf = dict(("avg_coop_mf"+str(mf), torch.mean(torch.stack([ag_coop for _, ag_coop in coop_agents_mf[mf].items()]))) for mf in config.mult_fact)
-        dff_rew_per_mf = dict(("avg_rew_mf"+str(mf), torch.mean(torch.stack([ag_coop for _, ag_coop in rew_agents_mf[mf].items()]))) for mf in config.mult_fact)
+            dff_coop_per_mf = dict(("avg_coop_mf"+str(mf), torch.mean(torch.stack([ag_coop for _, ag_coop in coop_agents_mf[mf].items()]))) for mf in config.mult_fact)
+            dff_rew_per_mf = dict(("avg_rew_mf"+str(mf), torch.mean(torch.stack([ag_coop for _, ag_coop in rew_agents_mf[mf].items()]))) for mf in config.mult_fact)
 
-        if (config.optuna_):
-            trial.report(measure, epoch)
-            
-            if trial.should_prune():
-                print("is time to pruneee")
-                wandb.finish()
-                raise optuna.exceptions.TrialPruned()
+            if (config.optuna_):
+                trial.report(measure, epoch)
+                
+                if trial.should_prune():
+                    print("is time to pruneee")
+                    wandb.finish()
+                    raise optuna.exceptions.TrialPruned()
 
-        if (config.wandb_mode == "online" and float(epoch)%30. == 0.):
+        if (config.wandb_mode == "online" and float(epoch)%float(config.print_step) == 0.):
             for ag_idx, agent in active_agents.items():
                 if (agent.is_dummy == False):
                     df_avg_coop = dict((ag_idx+"avg_coop_mf"+str(mf_input), coop_agents_mf[mf_input][ag_idx]) for mf_input in config.mult_fact)
@@ -259,14 +228,13 @@ def objective(args, repo_name, trial=None):
                 "weighted_average_coop": torch.mean(torch.stack([avg_i for _, avg_i in avg_rew.items()])) # only on the agents that played, of course
                 }
             if (config.non_dummy_idxs != []): 
-                dff = {**dff, **dff_coop_per_mf, **dff_rew_per_mf}#, **dff_Q0, **dff_Q1}#, **dff_Q10, **dff_Q11}
+                dff = {**dff, **dff_coop_per_mf, **dff_rew_per_mf}
             wandb.log(dff,
                 step=epoch, commit=True)
 
-        if (epoch%10 == 0):
+        if (epoch%config.print_step == 0):
             print("\nEpoch : {} \t Measure: {} ".format(epoch, measure))
             print("avg_rew=", {ag_idx:avg_i for ag_idx, avg_i in avg_rew.items()})
-            #print("avg_coop_tot=", avg_coop_tot)
             print("coop_agents_mf=",coop_agents_mf)
             print("dff_coop_per_mf=",dff_coop_per_mf)
     
@@ -284,8 +252,6 @@ def train_dqn(args):
         unc_string + args.algorithm + "_mf" + str(args.mult_fact) + \
         "_rep" + str(args.reputation_enabled) + "_n_act_agents" + str(args.num_active_agents)
     
-    #if (args.addition != ""):
-    #    repo_name += "_"+ str(args.addition)
     print("repo_name=", repo_name)
 
     # If optuna, then optimize or get best params. Else use given params

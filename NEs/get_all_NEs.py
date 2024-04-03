@@ -37,9 +37,12 @@ if __name__ == "__main__":
     data = [[], []]
     columns = ['O1', 'O2', 'JointStrategy', 'SER']
     utility_tuple = (u_beta([1, 1], beta), u_beta([1, 1], beta))
+    print("utility_tuple=",utility_tuple)
     # Identify the joint strategies that are Nash equilibria
     expected_payoffs = [[], []]
     for joint_strat in all_joint_strategies:
+        print("joint strategy=", joint_strat)
+        #utility = 1 * (np.abs(p[0]) ** beta) + (1 * p[1])
         is_ne = verify_nash(game, utility_tuple, joint_strat)
         if is_ne:
             for player, (payoff_matrix, strat) in enumerate(zip(game.payoffs, joint_strat)):

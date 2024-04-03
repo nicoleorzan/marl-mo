@@ -74,10 +74,10 @@ def interaction_loop(config, parallel_env, active_agents, active_agents_idxs, so
         #print("states=", states)
         
         # action
-        for agent in parallel_env.active_agents:
+        for idx_agent, agent in active_agents.items():
             #a = active_agents[agent].select_action(_eval)
-            a = active_agents[agent].select_action(states[idx_agent],_eval)
-            actions[agent] = a
+            a = active_agents[idx_agent].select_action(states[idx_agent],_eval)
+            actions[idx_agent] = a
         #print("actions=", actions)
 
         # reward

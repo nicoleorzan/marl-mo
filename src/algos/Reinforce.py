@@ -61,6 +61,7 @@ class Reinforce():
     def reset(self):
         self.memory.reset()
         self.memory.i = 0
+        self.return_episode = 0
 
     def temperature_scaled_softmax(logits, temperature=1.0):
         logits = logits / temperature

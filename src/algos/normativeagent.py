@@ -15,8 +15,6 @@ class NormativeAgent():
 
     def __init__(self, params, idx):
 
-        #self.buffer = RolloutBuffer()
-
         for key, val in params.items(): setattr(self, key, val)
 
         self.reputation = torch.Tensor([1.0])
@@ -34,12 +32,9 @@ class NormativeAgent():
 
     def reset(self):
         pass
-        #self.buffer.clear()
 
     def digest_input_anast(self, input):
-        #opponent_reputation, opponent_previous_action = input
-        self.opponent_reputation = input #opponent_reputation
-        #self.opponent_previous_action = opponent_previous_action
+        self.opponent_reputation = input
     
     def select_opponent(self, reputations):
         return random.randint(0, self.n_agents-1)
@@ -73,7 +68,6 @@ class NormativeAgent():
         other_rep = torch.Tensor([rep_state[0]])
         other_action = torch.Tensor([rep_state[1]])
         reputation = other_rep
-        #print("other rep=", other_rep, "other_action", other_action)
 
         if (self.mf >= 1.):
             if (other_action == torch.Tensor([1.0])):
@@ -86,7 +80,6 @@ class NormativeAgent():
                     reputation = torch.Tensor([0.0])
                 else: 
                     reputation = torch.Tensor([1.0])
-        #print("rep=", reputation)
         return reputation
 
         

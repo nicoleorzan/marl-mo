@@ -6,9 +6,10 @@ from torch.distributions import Categorical
 import numpy as np
 
 class ExperienceReplayMemory:
-    def __init__(self, capacity, config):
+    def __init__(self, capacity, config, input_state):
         self.config = config
         self.capacity = capacity
+        self.input_state = input_state
 
         if (self.config.reputation_enabled == 0):
             self.input_act = 1
@@ -18,7 +19,7 @@ class ExperienceReplayMemory:
         self.reset()
         
     def reset(self):
-        self._states = torch.empty((self.config.num_game_iterations,self.input_act))
+        self._states = torch.empty((self.config.num_game_iterations,self.input_state))
         self._actions = torch.empty((self.config.num_game_iterations,1))
         self._rewards = torch.empty((self.config.num_game_iterations,self.config.num_objectives))
         self._acc_rewards = torch.empty((self.config.num_game_iterations,self.config.num_objectives))
@@ -34,7 +35,6 @@ class ExperienceReplayMemory:
 class MOReinforce():
 
     def __init__(self, params, idx=0):
-
         for key, val in params.items(): setattr(self, key, val)
 
         #self.input_act = self.obs_size
@@ -43,15 +43,18 @@ class MOReinforce():
         else: 
             self.input_act = 2
 
-        if (self.num_objectives > 1): # I have to condition the state on the accrued rewards
-            self.input_act = self.input_act + self.num_objectives
+        if (self.old_actions_in_input == True):
+            self.input_act += self.num_active_agents-1 # I add as input the old actions of the agents I an playing against
+
+        #if (self.num_objectives > 1): # I have to condition the state on the accrued rewards
+        #    self.input_act = self.input_act + self.num_objectives
         print("input_act=", self.input_act)
 
         self.policy_act = Actor(params=params, input_size=self.input_act, output_size=self.action_size, \
             n_hidden=self.n_hidden_act, hidden_size=self.hidden_size_act).to(params.device)
     
         self.optimizer = torch.optim.Adam(self.policy_act.parameters(), lr=self.lr_actor)
-        self.memory = ExperienceReplayMemory(self.num_game_iterations, params)
+        self.memory = ExperienceReplayMemory(self.num_game_iterations, params, self.input_act)
         self.scheduler_act = torch.optim.lr_scheduler.ExponentialLR(self.optimizer, gamma=self.decayRate)
 
         self.n_update = 0.
@@ -69,24 +72,21 @@ class MOReinforce():
 
         self.eps_batch = 0.00001
 
-        if (self.utility == "linear"):
-            self.w = torch.ones(params.num_objectives)
+        #if (self.utility == "linear"):
+        self.w = torch.ones(params.num_objectives)
 
     def reset(self):
         self.memory.reset()
         self.memory.i = 0
         self.accrued_reward_observation = torch.zeros(self.num_objectives)
             
-    def select_action(self, _eval=False):
+    def select_action(self, state_act, _eval=False):
 
-        #print(" self.state_act", self.state_act)
-        if (self.num_objectives > 1):
-            self.state_act = torch.cat((self.state_act, self.accrued_reward_observation),0)
-            #print(" self.state_act cat", self.state_act)
-        self.state_act = self.state_act.view(-1,self.input_act)
-        #print(" self.state_act", self.state_act)
-
-        #print("self.state_act=", self.state_act)
+        #if (self.num_objectives > 1):
+        #    self.state_act = torch.cat((self.state_act, self.accrued_reward_observation),0)
+        #    #print(" self.state_act cat", self.state_act)
+        self.state_act = state_act.view(-1,self.input_act)
+        print(" self.state_act", self.state_act)
 
         out = self.policy_act.get_distribution(state=self.state_act)
         #print("out=", out)
@@ -176,6 +176,7 @@ class MOReinforce():
     
     def update_mo(self):
         #acc_rewards = self.compute_accrued_rewards()
+        print("update_mo")
         fut_rewards = self.compute_future_discounted_rewards()
         policy_loss = []
         

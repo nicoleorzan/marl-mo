@@ -65,7 +65,6 @@ class MoDQN():
 
         self.reputation = torch.Tensor([1.])
         self.old_reputation = self.reputation
-        self.previous_action = torch.Tensor([1.])
 
         self.is_dummy = False
         self.idx = idx
@@ -94,7 +93,6 @@ class MoDQN():
 
         self._print = False
 
-        #print("betas=", self.betas)
         if (self.betas_from_distrib):
             d = normal.Normal(1., self.sigma_beta)
             self.beta = d.sample()
@@ -104,18 +102,16 @@ class MoDQN():
             self.beta = self.betas[self.idx]
         print("beta=", self.beta)
 
+        self.reset()
+
     def reset(self):
         self.memory.reset()
         self.memory.i = 0
-        self.idx_mf = 0
         self.previous_action = torch.Tensor([0])
+        self.return_episode = 0.
 
     def argmax(self, q_values):
-        #if (self.idx == 0):
-        #    print("q_val=", q_values)
         q_values = q_values.squeeze(0) # eliminating batch_size
-        #if (self.idx == 0):
-        #    print("q_val=", q_values)
         top = torch.Tensor([-10000000])
         ties = []
 
@@ -133,7 +129,7 @@ class MoDQN():
         if (self._print == True and self.idx == 0):
             print("take action")
 
-        #self.state_act = self.state_act.view(-1,self.input_act)
+        print("state_act", state_act)
         state_act = state_act.view(-1,self.input_act)
 
         if (_eval == True):
@@ -141,17 +137,14 @@ class MoDQN():
             act_values = self.policy_act.get_values(state=state_act)[0].view(1, self.num_objectives, self.action_size) 
             scalarized_action_val = self.scal_func(act_values, self.w)
             action = self.argmax(scalarized_action_val)
-            #action = self.argmax(self.policy_act.get_values(state=state_act)[0])
         
         elif (_eval == False):
-            #print("self.epsilon=", self.epsilon)
             if torch.rand(1) < self.epsilon:
                 action = random.choice([i for i in range(self.action_size)])
                 if (self._print == True and self.idx == 0):
                     print("====> RAND")
                     print("action=", action)
             else:
-                #print("self.policy_act.get_values(state=state_act)[0]=",self.policy_act.get_values(state=state_act)[0])
                 act_values = self.policy_act.get_values(state=state_act)[0].view(1, self.num_objectives, self.action_size)
                 scalarized_action_val = self.scal_func(act_values, self.w)
                 action = self.argmax(scalarized_action_val)
@@ -166,57 +159,26 @@ class MoDQN():
         return torch.Tensor([action])
         
     def get_action_values(self, state):
-        #print("state=",state)
         with torch.no_grad():
             out = self.policy_act.get_values(state=state).view(self.num_objectives, self.action_size) 
-            #print("out=", out)
             return out
         
     def linear(self, x, w):
-        #print("w=", w.shape)
-        #print("x=", x.shape)
-        #print('x[:,0]=',x[:,0])
         out = torch.matmul(w, x)
-        #print("out=", out)
         return out
     
     def non_linear_pgg(self, x, w):
-        #print("w=", w.shape)
-        #print("x=", x.shape)
         out = w[0]*(x[:,0])**self.beta + w[1]*x[:,1] + w[2]*x[:,2]
-        #print("out=", out)
         return out
     
     def sigmoid(self, x, w):
-        #print("w=", w.shape)
-        #print("x=", x.shape)
         out = (w[0]*x[:,0]*self.num_active_agents)**self.beta/self.num_active_agents + w[1]*x[:,1] + w[2]*x[:,2]
-        #print("out=", out)
         return out
         
     def GGF(self, x, w):
-        #if (self._print == True and self.idx == 0):
-        #    print("CALLING GGF")
-        #    print("x=", x, x.shape)
-        #    assert(x.shape[1] == self.num_objectives)
-        #print("w=", w)
-        #print("x=", x)
         _dim=1 # WE CONSIDER DIM-0 AS THE BATCH SIZE
-        #print("dim=", _dim)
         x_up = x.sort(dim=_dim)[0]
-        #if (self._print == True and self.idx == 0):
-        #    print("x_up=", x_up)
-        #ggf = torch.inner(w, x_up)
-        #print("act0=", x_up[0][0]*w[0] + x_up[1][0]*w[1] + x_up[2][0]*w[2])
-        #print("act1=", x_up[0][1]*w[0] + x_up[1][1]*w[1] + x_up[2][1]*w[2])
         ggf = torch.matmul(w, x_up)
-        #print("ggf=", ggf)
-        #if (self.idx == 0):
-        #    print("act vals=", x, x.shape)
-        #    print("reordered=", x_up)
-        #    print("ggf=", ggf)
-        #if (self._print == True and self.idx == 0):
-        #    print("DONE")
         return ggf
 
     def append_to_replay(self, s, a, r, s_, d):
@@ -233,14 +195,7 @@ class MoDQN():
         batch_reward = self.memory._rewards
         batch_next_state = self.memory._next_states
         batch_dones = self.memory._dones
-        #if (self._print == True and self.idx == 0):
-        #    print("batch_next_state=",batch_next_state)
-        #print("batch_dones=",batch_dones)
-        #if (self._print == True and self.idx == 0):
-        #    print("[s for s in batch_next_state if s is not None]=",[s for s in batch_next_state if s is not None])
-        #    print("torch.stack([s for s in batch_next_state if s is not None])=", torch.stack([s for s in batch_next_state if s is not None]))
-        #print("torch.tensor([s for s in batch_next_state if s is not None]=",torch.tensor([s for s in batch_next_state if s is not None]))
-        
+       
         non_final_mask = torch.tensor(tuple(map(lambda s: s is not None, batch_next_state)), device=self.device, dtype=torch.uint8)
         try: #sometimes all next states are false
             non_final_next_states = torch.stack([s for s in batch_next_state if s is not None])#.view(-1,1)
@@ -269,7 +224,6 @@ class MoDQN():
         #scalarized_q_values = self.scal_func(current_q_values, self.w)
         #print("scal vals=",scalarized_q_values)
         #print("batch_actions=", batch_action, batch_action.shape)
-        #ba = torch.Tensor([[1.],[0.]])
         batch_action = batch_action.repeat(1, self.num_objectives).view(self.batch_size, self.num_objectives, 1)
         current_q_values = torch.gather(current_q_values, dim=2, index=batch_action)
         if (self._print == True and self.idx == 0):
@@ -283,7 +237,6 @@ class MoDQN():
             if (self._print == True and self.idx == 0):
                 print("empty_next_state_values=",empty_next_state_values)
             if not empty_next_state_values:
-                #print("here")
                 # first we gotta compute MAX NEXT ACTION
                 max_next_action = self.get_max_next_state_action(non_final_next_states)
                 if (self._print == True and self.idx == 0):
@@ -300,18 +253,15 @@ class MoDQN():
                     if (batch_dones[i] == torch.Tensor([True])):
                         max_next_q_values[i] = 0.
             if (self._print == True and self.idx == 0):
-                #print("batch_reward=",batch_reward.unsqueeze(0), batch_reward.unsqueeze(-1).shape)
                 # fin qui ok
                 print("max_next_q_values=",max_next_q_values, max_next_q_values.shape)
-                ##print("current_q_values=",current_q_values, current_q_values.shape)
             if (self._print == True and self.idx == 0):
-                #print("batch_reward.unsqueeze(-1)", batch_reward.unsqueeze(-1))
                 print("self.gamma*max_next_q_values=",(self.gamma*max_next_q_values).shape)
                 print("batch_reward.shape=",batch_reward.shape)
 
             expected_q_values = batch_reward.unsqueeze(-1) + self.gamma*max_next_q_values
             if (self._print == True and self.idx == 0):
-                print("expected_q_values=",expected_q_values.shape)#, expected_q_values.shape)
+                print("expected_q_values=",expected_q_values.shape)
 
         diff = (expected_q_values - current_q_values)
         loss = self.MSE(diff)
@@ -320,7 +270,6 @@ class MoDQN():
         return loss
 
     def update(self, _iter):
-        #print("here")
 
         batch_vars = self.prep_minibatch()
 
@@ -334,18 +283,14 @@ class MoDQN():
 
         self.reset()
         self.scheduler.step()
-        #print("LR=",self.scheduler.get_last_lr())
 
-        #modif exploration
         self.update_epsilon(_iter)
 
         return loss.detach()
     
     def update_epsilon(self, _iter):
-        #print("update epsilon")
-        #self.epsilon = self.eps0*(1.-self.r)**_iter
         if (self.epsilon >= self.final_epsilon): 
-            self.epsilon = self.epsilon -self.epsilon_delta #self.eps0*(1.-self.r)**_iter
+            self.epsilon = self.epsilon -self.epsilon_delta
 
     def update_target_model(self):
         self.update_count += 1
