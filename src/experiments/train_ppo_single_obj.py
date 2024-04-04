@@ -193,6 +193,7 @@ def objective(args, repo_name, trial=None):
 
             dff = {
                 "epoch": epoch,
+                "lr_actor": lrnow,
                 "avg_rew_time": measure,
                 "avg_coop_from_agents": avg_coop_tot,
                 "weighted_average_coop": torch.mean(torch.stack([avg_i for _, avg_i in avg_rew.items()])) # only on the agents that played, of course
