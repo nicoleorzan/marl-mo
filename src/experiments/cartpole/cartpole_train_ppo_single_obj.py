@@ -29,7 +29,7 @@ def interaction_loop(config, active_agents, active_agents_idxs, _eval=False):
         next_states[idx_agent] = next_obs
 
     done = False
-    for i in range(config.num_game_iterations):
+    for i in range(config.num_steps):
         #print("step=",i)
         # state
         actions = {}; states = next_states; logprobs = {}; values = {}

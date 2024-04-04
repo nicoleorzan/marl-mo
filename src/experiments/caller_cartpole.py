@@ -7,7 +7,7 @@ if __name__ == '__main__':
     parser.add_argument('--n_agents', type=int)
         
     parser.add_argument('--num_epochs', type=int, default=50000) # sarebbe total_steps
-    parser.add_argument('--num_game_iterations', type=int, default=1)
+    parser.add_argument('--num_steps', type=int, default=1)
     parser.add_argument('--wandb_mode', type=str, choices = ["online", "offline"], default="offline")
     
     args = parser.parse_args()

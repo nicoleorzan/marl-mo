@@ -9,7 +9,7 @@ class ExperienceReplayMemory:
     def __init__(self, params, input_state):
 
         for key, val in params.items(): setattr(self, key, val)
-        self.capacity = self.num_game_iterations
+        self.capacity = self.num_steps
         self.input_state = input_state
 
     def reset(self):
@@ -75,8 +75,8 @@ class PPO():
             next_value = self.policy.get_value(next_obs).reshape(1, -1)
             self.advantages = torch.zeros_like(rewards).to(self.device)
             lastgaelam = 0
-            for t in reversed(range(self.num_game_iterations)): # or num_steps
-                if t == self.num_game_iterations - 1: # or num_steps
+            for t in reversed(range(self.num_steps)): # or num_steps
+                if t == self.num_steps - 1: # or num_steps
                     nextnonterminal = 1.0 - next_done
                     nextvalues = next_value
                 else:

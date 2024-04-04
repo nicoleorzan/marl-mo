@@ -10,7 +10,6 @@ def setup_training_hyperparams(args, trial):
     game_params = dict(
         device = torch.device("cuda" if torch.cuda.is_available() and args.cuda else "cpu"),
         num_epochs = args.num_epochs,
-        num_game_iterations = args.num_game_iterations,
         seed = 123,
         action_size = ACTION_SIZE,
         print_step = 50,
@@ -18,9 +17,8 @@ def setup_training_hyperparams(args, trial):
     )
 
     obs_size = 2  # m factor and action of other
-    num_steps = 10 #e` la stessa cosa di num_game_iterations
     num_minibatches = 4
-    batch_size = num_steps #args.num_game_iterations
+    batch_size = args.num_steps #args.num_game_iterations
     total_timesteps = args.num_epochs
     minibatch_size = batch_size #int(batch_size // num_minibatches)
     algo_params = dict(
@@ -31,7 +29,7 @@ def setup_training_hyperparams(args, trial):
         lr_actor = 0.001,
         anneal_lr = True,
         hidden_size_act = 4,
-        num_steps = num_steps, ##128, #the number of steps to run in each environment per policy rollout
+        num_steps = args.num_steps, ##128, #the number of steps to run in each environment per policy rollout
         gae_lambda = 0.95, #the lambda for the general advantage estimation
         num_minibatches = num_minibatches, #the number of mini-batches
         update_epochs = 4, #the K epochs to update the policy
