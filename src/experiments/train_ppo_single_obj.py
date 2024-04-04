@@ -120,8 +120,8 @@ def objective(args, repo_name, trial=None):
         if config.anneal_lr:
             frac = 1.0 - (epoch - 1.0) / config.num_iterations
             lrnow = frac * config.lr_actor
-            for agent in agents:
-                agent.optimizer.param_groups[0]["lr"] = lrnow
+            for agent_idx in agents:
+                agents[agent_idx].optimizer.param_groups[0]["lr"] = lrnow
 
         # pick a group of agents
         active_agents_idxs = pick_agents_idxs(config)
