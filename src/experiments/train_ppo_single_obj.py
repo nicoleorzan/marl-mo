@@ -24,7 +24,7 @@ def interaction_loop(config, parallel_env, active_agents, active_agents_idxs, so
         observations = parallel_env.reset()
 
     #print("observations=",observations)
-    rewards_dict = {}; actions_dict = {}; returns = {}
+    rewards_dict = {}; actions_dict = {}
 
     states = {}; next_states = {}
     for idx_agent, agent in active_agents.items():
@@ -33,8 +33,10 @@ def interaction_loop(config, parallel_env, active_agents, active_agents_idxs, so
 
     done = False
     for i in range(config.num_game_iterations):
+        #print("i=",i)
         # state
         actions = {}; states = next_states; logprobs = {}; values = {}
+        #print("states=", states)
         
         # action
         for ag_idx, agent in active_agents.items():
@@ -45,9 +47,11 @@ def interaction_loop(config, parallel_env, active_agents, active_agents_idxs, so
             logprobs[ag_idx] = logprob
         for ag_idx, agent in active_agents.items():
             agent.previous_action = actions[ag_idx]
+        #print("actions=", actions)
         
         # reward
         _, rewards, done, _ = parallel_env.step(actions)
+        #print("rewards=", rewards)
 
         if (_eval==True):
             for ag_idx in active_agents_idxs:       
@@ -63,14 +67,16 @@ def interaction_loop(config, parallel_env, active_agents, active_agents_idxs, so
         for idx_agent, agent in active_agents.items():
             others_acts = torch.stack([torch.Tensor([active_agents["agent_"+str(_id)].previous_action ]) for _id in active_agents_idxs if "agent_"+str(_id)!=idx_agent], dim=1).squeeze(0)
             next_states[idx_agent] = torch.cat((observations[idx_agent], others_acts))
+        #print("next_states=", next_states)
 
         if (_eval == False):
             for ag_idx, agent in active_agents.items():
                 agent.append_to_replay(states[ag_idx], actions[ag_idx], logprobs[ag_idx], rewards[ag_idx], done, values[ag_idx])
 
         # bootstrap value if not done
-        for ag_idx, agent in active_agents.items():
-            agent.bootstrap(next_states[ag_idx], done)
+        if (_eval == False):
+            for ag_idx, agent in active_agents.items():
+                agent.bootstrap(next_states[ag_idx], done)
 
         if done:
             if (_eval == True):
@@ -113,12 +119,12 @@ def objective(args, repo_name, trial=None):
     
     #### TRAINING LOOP
     coop_agents_mf = {}; rew_agents_mf = {}; scal_func_mf ={}
-    #for epoch in range(config.num_epochs):
-    for epoch in range(config.num_iterations):
-        #print("\n==========>Epoch=", epoch)
+    print("Num iterations=", config.num_iterations)
+    for iteration in range(config.num_iterations):
+        print("\n==========>Iteration=", iteration)
 
         if config.anneal_lr:
-            frac = 1.0 - (epoch - 1.0) / config.num_iterations
+            frac = 1.0 - (iteration - 1.0) / config.num_iterations
             lrnow = frac * config.lr_actor
             for agent_idx in agents:
                 agents[agent_idx].optimizer.param_groups[0]["lr"] = lrnow
@@ -143,7 +149,8 @@ def objective(args, repo_name, trial=None):
 
         # evaluation step
         #print("\n\nEVAL")
-        if (float(epoch)%float(config.print_step) == 0.):
+        if (float(iteration)%float(config.print_step) == 0.):
+            #print("qui")
             for mf_input in config.mult_fact:
                 avg_rew, avg_coop, scal_func = interaction_loop(config, parallel_env, active_agents, active_agents_idxs, social_norm, True, mf_input)
                 avg_coop_tot = torch.mean(torch.stack([cop_val for _, cop_val in avg_coop.items()]))
@@ -158,7 +165,7 @@ def objective(args, repo_name, trial=None):
             dff_rew_per_mf = dict(("avg_rew_mf"+str(mf), torch.mean(torch.stack([ag_coop for _, ag_coop in rew_agents_mf[mf].items()]))) for mf in config.mult_fact)
 
 
-        if (config.wandb_mode == "online" and float(epoch)%float(config.print_step) == 0.):
+        if (config.wandb_mode == "online" and float(iteration)%float(config.print_step) == 0.):
             for ag_idx, agent in active_agents.items():
                 if (agent.is_dummy == False):
                     df_avg_coop = dict((ag_idx+"avg_coop_mf"+str(mf_input), coop_agents_mf[mf_input][ag_idx]) for mf_input in config.mult_fact)
@@ -172,7 +179,7 @@ def objective(args, repo_name, trial=None):
                     df_loss = {ag_idx+"loss": losses[ag_idx]}
                     df_agent = {**{
                         ag_idx+"epsilon": active_agents[str(ag_idx)].epsilon,
-                        'epoch': epoch}, 
+                        'epoch': iteration}, 
                         **df_avg_coop, **df_avg_rew, **df_loss, **df_scal_func
                         }
                 else:
@@ -185,14 +192,14 @@ def objective(args, repo_name, trial=None):
                     df_rews_tmp = dict((ag_idx+"rew_mf"+str(mf_input), rew_agents_mf[mf_input][ag_idx]) for mf_input in config.mult_fact)
                     df_avg_rew = {**df_avg_rew, **df_rews_tmp}
                     df_agent = {**{
-                        'epoch': epoch}, 
+                        'epoch': iteration}, 
                         **df_avg_coop, **df_avg_rew, **df_scal_func
                         }
                 if ('df_agent' in locals() ):
-                    wandb.log(df_agent, step=epoch, commit=False)
+                    wandb.log(df_agent, step=iteration, commit=False)
 
             dff = {
-                "epoch": epoch,
+                "epoch": iteration,
                 "lr_actor": lrnow,
                 "avg_rew_time": measure,
                 "avg_coop_from_agents": avg_coop_tot,
@@ -201,10 +208,10 @@ def objective(args, repo_name, trial=None):
             if (config.non_dummy_idxs != []): 
                 dff = {**dff, **dff_coop_per_mf, **dff_rew_per_mf}
             wandb.log(dff,
-                step=epoch, commit=True)
+                step=iteration, commit=True)
 
-        if (epoch%config.print_step == 0):
-            print("\nEpoch : {}".format(epoch))
+        if (iteration%config.print_step == 0):
+            print("\nEpoch : {}".format(iteration))
             print("avg_rew=", {ag_idx:avg_i for ag_idx, avg_i in avg_rew.items()})
             print("coop_agents_mf=",coop_agents_mf)
             print("dff_coop_per_mf=",dff_coop_per_mf)

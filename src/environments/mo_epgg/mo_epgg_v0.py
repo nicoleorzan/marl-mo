@@ -147,11 +147,12 @@ class parallel_env(ParallelEnv):
         environment so that render(), and step() can be called without issues.
         Returns the observations for each agent
         """
+        #print("mult_in=",mult_in)
         self.agents = self.possible_agents[:]
         self.dones = {agent: False for agent in self.active_agents}
 
         if (mult_in is not None):
-            self.current_multiplier = mult_in
+            self.current_multiplier = torch.Tensor([mult_in])
         else:
             if hasattr(self.mult_fact, '__len__'):
                 self.current_multiplier = self.set_mf_from_list()
@@ -161,6 +162,7 @@ class parallel_env(ParallelEnv):
                         self.current_multiplier = self.set_mf_from_interval()
             else: 
                 self.current_multiplier = self.mult_fact.to(device)
+        #print("current mult=", self.current_multiplier)
 
         self.state = {agent: None for agent in self.active_agents}
 

@@ -89,7 +89,7 @@ def setup_training_hyperparams(args, trial):
         #num_steps = 10 #e` la stessa cosa di num_game_iterations
         num_minibatches = 4
         batch_size = args.num_game_iterations
-        total_timesteps = 500000
+        total_timesteps = args.num_epochs
         minibatch_size = batch_size #int(batch_size // num_minibatches)
         algo_params = dict(
             obs_size = obs_size,

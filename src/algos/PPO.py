@@ -70,6 +70,8 @@ class PPO():
         #print("all values=", values)
         dones = self.memory._dones
         rewards = self.memory._rewards
+        #print("rewards=", rewards)
+        #print("actions=", self.memory._actions)
         with torch.no_grad():
             next_value = self.policy.get_value(next_obs).reshape(1, -1)
             self.advantages = torch.zeros_like(rewards).to(self.device)
@@ -86,7 +88,7 @@ class PPO():
                 delta = rewards[t] + self.gamma * nextvalues * nextnonterminal - values[t]
                 self.advantages[t] = lastgaelam = delta + self.gamma * self.gae_lambda * nextnonterminal * lastgaelam
             self.returns = self.advantages + values
-            #print("returns=", returns)
+            #print("returns=", self.returns)
         
         self.flatten()
 
