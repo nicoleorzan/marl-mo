@@ -20,15 +20,15 @@ class ActorCritic(nn.Module):
 
         self.critic = nn.Sequential(
             layer_init(nn.Linear(self.input_size, self.hidden_size)),
-            #nn.Tanh(),
-            #layer_init(nn.Linear(self.hidden_size, self.hidden_size)),
+            nn.Tanh(),
+            layer_init(nn.Linear(self.hidden_size, self.hidden_size)),
             nn.Tanh(),
             layer_init(nn.Linear(self.hidden_size, 1), std=1.0),
         )
         self.actor = nn.Sequential(
             layer_init(nn.Linear(self.input_size, self.hidden_size)),
-            #nn.Tanh(),
-            #layer_init(nn.Linear(self.hidden_size, self.hidden_size)),
+            nn.Tanh(),
+            layer_init(nn.Linear(self.hidden_size, self.hidden_size)),
             nn.Tanh(),
             layer_init(nn.Linear(self.hidden_size, self.output_size), std=0.01),
         )

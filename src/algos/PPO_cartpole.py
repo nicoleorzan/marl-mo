@@ -31,13 +31,9 @@ class PPO():
     def __init__(self, params, idx=0):
 
         for key, val in params.items(): setattr(self, key, val)
-        self.input_act = 1
+        self.input_act = 4
         self.idx = idx
         self._print = 0
-
-        if (self.old_actions_in_input == True):
-            self.input_act += self.num_active_agents-1
-        print("input_at=", self.input_act)
 
         self.policy = ActorCritic(params=params, input_size=self.input_act, output_size=self.action_size, \
             hidden_size=self.hidden_size_act).to(params.device)

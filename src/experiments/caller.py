@@ -48,7 +48,7 @@ if __name__ == '__main__':
     parser.add_argument('--old_actions_in_input', type=int, choices = [0, 1], default=1) # 1 for true 0 for false
     parser.add_argument('--mf_from_interval', type=int, choices = [0, 1], default=0) # 1 for true 0 for false
     parser.add_argument('--scalarization_function', type=str, choices = ["linear", "ggf", "non-linear-pgg", "sigmoid"], default="linear")
-    parser.add_argument('--print_step', type=int, default=20)
+    parser.add_argument('--print_step', type=int, default=50)
     parser.add_argument('--epsilon_dqn', type=float, default=0.01)
     parser.add_argument('--lr_dqn', type=float, default=0.001)
     parser.add_argument('--sigma_beta', type=float, default=0.5)
@@ -87,7 +87,7 @@ if __name__ == '__main__':
     assert(args.proportion_dummy_agents >= 0.)    
     assert(args.proportion_dummy_agents <= 1.)
 
-    assert(args.n_agents > 1)
+   # assert(args.n_agents > 1)
     if (args.algorithm == "q-learning"):
         assert(n_certain_agents == args.n_agents)
     assert(len(args.uncertainties) == args.n_agents)
