@@ -117,6 +117,12 @@ def objective(args, repo_name, trial=None):
     for epoch in range(config.num_iterations):
         #print("\n==========>Epoch=", epoch)
 
+        if config.anneal_lr:
+            frac = 1.0 - (epoch - 1.0) / config.num_iterations
+            lrnow = frac * config.lr_actor
+            for agent in agents:
+                agent.optimizer.param_groups[0]["lr"] = lrnow
+
         # pick a group of agents
         active_agents_idxs = pick_agents_idxs(config)
         active_agents = {"agent_"+str(key): agents["agent_"+str(key)] for key, _ in zip(active_agents_idxs, agents)}

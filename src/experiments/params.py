@@ -96,7 +96,8 @@ def setup_training_hyperparams(args, trial):
             gamma = 0.99,
             chi = 0.001,
             epsilon = 0.01,
-            lr_actor = 0.1,
+            lr_actor = 0.2,
+            anneal_lr = True,
             hidden_size_act = 4,
             #num_steps = num_steps, ##128, #the number of steps to run in each environment per policy rollout
             gae_lambda = 0.95, #the lambda for the general advantage estimation
