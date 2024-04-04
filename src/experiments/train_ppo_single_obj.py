@@ -33,7 +33,7 @@ def interaction_loop(config, parallel_env, active_agents, active_agents_idxs, so
 
     done = False
     for i in range(config.num_game_iterations):
-        #print("i=",i)
+        #print("step=",i)
         # state
         actions = {}; states = next_states; logprobs = {}; values = {}
         #print("states=", states)
@@ -74,7 +74,7 @@ def interaction_loop(config, parallel_env, active_agents, active_agents_idxs, so
                 agent.append_to_replay(states[ag_idx], actions[ag_idx], logprobs[ag_idx], rewards[ag_idx], done, values[ag_idx])
 
         # bootstrap value if not done
-        if (_eval == False):
+        if (_eval == False and done):
             for ag_idx, agent in active_agents.items():
                 agent.bootstrap(next_states[ag_idx], done)
 
@@ -119,9 +119,9 @@ def objective(args, repo_name, trial=None):
     
     #### TRAINING LOOP
     coop_agents_mf = {}; rew_agents_mf = {}; scal_func_mf ={}
-    print("Num iterations=", config.num_iterations)
+    #print("Num iterations=", config.num_iterations)
     for iteration in range(config.num_iterations):
-        print("\n==========>Iteration=", iteration)
+        #print("\niteration=", iteration)
 
         if config.anneal_lr:
             frac = 1.0 - (iteration - 1.0) / config.num_iterations
@@ -150,7 +150,7 @@ def objective(args, repo_name, trial=None):
         # evaluation step
         #print("\n\nEVAL")
         if (float(iteration)%float(config.print_step) == 0.):
-            #print("qui")
+            # print("qui")
             for mf_input in config.mult_fact:
                 avg_rew, avg_coop, scal_func = interaction_loop(config, parallel_env, active_agents, active_agents_idxs, social_norm, True, mf_input)
                 avg_coop_tot = torch.mean(torch.stack([cop_val for _, cop_val in avg_coop.items()]))

@@ -30,7 +30,7 @@ if __name__ == '__main__':
         default=[])
         
     parser.add_argument('--optuna_', type=int, default=0)
-    parser.add_argument('--num_epochs', type=int, default=200)
+    parser.add_argument('--num_epochs', type=int, default=50000) # sarebbe total_steps
     parser.add_argument('--num_game_iterations', type=int, default=1)
     parser.add_argument('--num_active_agents', type=int, default=2) 
     parser.add_argument('--num_objectives', type=int, choices = [1, 2, 3], default=1)

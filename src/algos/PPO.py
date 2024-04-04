@@ -67,11 +67,9 @@ class PPO():
     def bootstrap(self, next_obs, next_done):
         #print("next_obs, next_done=",next_obs, next_done)
         values = self.memory._values
-        #print("all values=", values)
         dones = self.memory._dones
         rewards = self.memory._rewards
         #print("rewards=", rewards)
-        #print("actions=", self.memory._actions)
         with torch.no_grad():
             next_value = self.policy.get_value(next_obs).reshape(1, -1)
             self.advantages = torch.zeros_like(rewards).to(self.device)
@@ -83,8 +81,6 @@ class PPO():
                 else:
                     nextnonterminal = 1.0 - dones[t + 1]
                     nextvalues = values[t + 1]
-                #print("values[t]=", values[t])
-                #print("rewards[t], self.gamma, nextvalues, nextnonterminal, values[t]=",rewards[t], self.gamma, nextvalues, nextnonterminal, values[t])
                 delta = rewards[t] + self.gamma * nextvalues * nextnonterminal - values[t]
                 self.advantages[t] = lastgaelam = delta + self.gamma * self.gae_lambda * nextnonterminal * lastgaelam
             self.returns = self.advantages + values
