@@ -8,6 +8,7 @@ from src.utils.utils import pick_agents_idxs
 from src.experiments.params import setup_training_hyperparams
 
 torch.autograd.set_detect_anomaly(True)
+_print = 0
 
 def define_agents(config):
     agents = {}
@@ -36,7 +37,6 @@ def interaction_loop(config, parallel_env, active_agents, active_agents_idxs, so
         #print("step=",i)
         # state
         actions = {}; states = next_states; logprobs = {}; values = {}
-        #print("states=", states)
         
         # action
         for ag_idx, agent in active_agents.items():
@@ -47,11 +47,17 @@ def interaction_loop(config, parallel_env, active_agents, active_agents_idxs, so
             logprobs[ag_idx] = logprob
         for ag_idx, agent in active_agents.items():
             agent.previous_action = actions[ag_idx]
-        #print("actions=", actions)
         
         # reward
         _, rewards, done, _ = parallel_env.step(actions)
-        #print("rewards=", rewards)
+        for ag_idx, agent in active_agents.items():
+            rewards[ag_idx] = torch.Tensor([0])
+            if (actions[ag_idx] == 1):
+                rewards[ag_idx] = torch.Tensor([1])
+        if (_print):
+            print("states=", states)
+            print("actions=", actions)
+            print("rewards=", rewards)
 
         if (_eval==True):
             for ag_idx in active_agents_idxs:       
@@ -118,10 +124,11 @@ def objective(args, repo_name, trial=None):
     social_norm = SocialNorm(config, agents)
     
     #### TRAINING LOOP
-    coop_agents_mf = {}; rew_agents_mf = {}; scal_func_mf ={}
-    #print("Num iterations=", config.num_iterations)
+    coop_agents_mf = {}; rew_agents_mf = {}; scal_func_mf = {}
+    print("Num iterations=", config.num_iterations)
     for iteration in range(config.num_iterations):
-        #print("\niteration=", iteration)
+        if (_print):
+            print("\niteration=", iteration)
 
         if config.anneal_lr:
             frac = 1.0 - (iteration - 1.0) / config.num_iterations

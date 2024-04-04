@@ -33,13 +33,14 @@ class PPO():
         for key, val in params.items(): setattr(self, key, val)
         self.input_act = 1
         self.idx = idx
+        self._print = 0
 
         if (self.old_actions_in_input == True):
             self.input_act += self.num_active_agents-1 
 
         self.policy = ActorCritic(params=params, input_size=self.input_act, output_size=self.action_size, \
             hidden_size=self.hidden_size_act).to(params.device)
-        self.optimizer = torch.optim.Adam(self.policy.parameters(), lr=self.lr_actor, eps=1e-5)
+        self.optimizer = torch.optim.Adam(self.policy.parameters(), lr=self.lr_actor)#, eps=1e-5)
         self.memory = ExperienceReplayMemory(params, self.input_act)
 
         self.previous_action = torch.Tensor([1.])
@@ -50,6 +51,7 @@ class PPO():
         self.memory.reset()
         self.memory.i = 0
         self.return_episode = 0.
+        self.previous_action = torch.Tensor([1.]) # not sure
         
     def get_action_and_value(self, state, action=None):
         return self.policy.get_action_and_value(state, action)
@@ -69,7 +71,9 @@ class PPO():
         values = self.memory._values
         dones = self.memory._dones
         rewards = self.memory._rewards
-        #print("rewards=", rewards)
+        if (self.idx == 0 and self._print):
+            print("rewards=", rewards)
+            print("actions=", self.memory._actions)
         with torch.no_grad():
             next_value = self.policy.get_value(next_obs).reshape(1, -1)
             self.advantages = torch.zeros_like(rewards).to(self.device)
@@ -84,7 +88,8 @@ class PPO():
                 delta = rewards[t] + self.gamma * nextvalues * nextnonterminal - values[t]
                 self.advantages[t] = lastgaelam = delta + self.gamma * self.gae_lambda * nextnonterminal * lastgaelam
             self.returns = self.advantages + values
-            #print("returns=", self.returns)
+            if (self.idx == 0 and self._print):
+                print("returns=", self.returns)
         
         self.flatten()
 
@@ -106,10 +111,10 @@ class PPO():
             for start in range(0, self.batch_size, self.minibatch_size):
                 end = start + self.minibatch_size
                 mb_inds = b_inds[start:end]
-                #print("mb_inds=", mb_inds)
-
-                #print("self.b_obs[mb_inds]=",self.b_obs[mb_inds])
-                #print("self.b_actions.long()[mb_inds]=", self.b_actions.long()[mb_inds])
+                if (self.idx == 0 and self._print):
+                    print("mb_inds=", mb_inds)
+                    print("self.b_obs[mb_inds]=",self.b_obs[mb_inds])
+                    print("self.b_actions.long()[mb_inds]=", self.b_actions.long()[mb_inds])
                 _, newlogprob, entropy, newvalue = self.get_action_and_value(self.b_obs[mb_inds], self.b_actions.long()[mb_inds])
                 logratio = newlogprob - self.b_logprobs[mb_inds]
                 ratio = logratio.exp()
