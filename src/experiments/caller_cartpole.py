@@ -2,6 +2,7 @@ import argparse
 import numpy as np
 from src.experiments.cartpole.cartpole_train_ppo_single_obj import train_ppo_single_obj
 
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--n_agents', type=int)
