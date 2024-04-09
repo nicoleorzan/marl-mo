@@ -49,7 +49,7 @@ def setup_training_hyperparams(args, trial):
             obs_size = obs_size,
             gamma = 0.999,
             chi = 0.001,
-            lr_actor = 0.03,
+            lr_actor = 0.05,
             n_hidden_act = num_hidden_a,
             hidden_size_act = hidden_size_a,
             decayRate = 0.999,
