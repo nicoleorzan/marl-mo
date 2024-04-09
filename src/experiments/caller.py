@@ -1,10 +1,10 @@
 import argparse
 import numpy as np
-from src.experiments.train_reinforce import train_reinforce
+from src.experiments.train_reinforce_ser import train_reinforce
 from src.experiments.train_q_learning import train_q_learning
 from src.experiments.train_dqn import train_dqn
 #from src.experiments.train_ppo import train_ppo
-from src.experiments.train_ppo_single_obj import train_ppo_single_obj
+#from src.experiments.train_ppo_single_obj import train_ppo_single_obj
 
 def non_increasing(L):
     return all(x>y for x, y in zip(L, L[1:]))
@@ -32,6 +32,7 @@ if __name__ == '__main__':
     parser.add_argument('--optuna_', type=int, default=0)
     parser.add_argument('--num_epochs', type=int, default=50000) # sarebbe total_steps
     parser.add_argument('--num_game_iterations', type=int, default=1)
+    parser.add_argument('--batch_size', type=int, default=1)
     parser.add_argument('--num_active_agents', type=int, default=2) 
     parser.add_argument('--num_objectives', type=int, choices = [1, 2, 3], default=1)
     parser.add_argument('--reputation_enabled', type=int, default=0)
@@ -48,12 +49,11 @@ if __name__ == '__main__':
     parser.add_argument('--old_actions_in_input', type=int, choices = [0, 1], default=1) # 1 for true 0 for false
     parser.add_argument('--mf_from_interval', type=int, choices = [0, 1], default=0) # 1 for true 0 for false
     parser.add_argument('--scalarization_function', type=str, choices = ["linear", "ggf", "non-linear-pgg", "sigmoid"], default="linear")
-    parser.add_argument('--print_step', type=int, default=50)
+    parser.add_argument('--print_step', type=int, default=1)
     parser.add_argument('--epsilon_dqn', type=float, default=0.01)
     parser.add_argument('--lr_dqn', type=float, default=0.001)
     parser.add_argument('--sigma_beta', type=float, default=0.5)
     parser.add_argument('--betas_from_distrib', type=float, default=0) # 1 for linear, <1 for concavity, >1 for convexity
-    #parser.add_argument('--_print', type=int, choices = [0, 1], default=0) # 1 yes 0 no
     parser.add_argument( # to fill with values of weights for every objective (can be 0.)
         "--weights",
         nargs="*",
@@ -103,6 +103,3 @@ if __name__ == '__main__':
         train_reinforce(args)    
     elif args.algorithm == "q-learning":
         train_q_learning(args)
-    elif args.algorithm == "ppo":
-        print("\n\n===============>TRAINING WITH SINGLE OBJECTIVE!!\n\n\n")
-        train_ppo_single_obj(args)

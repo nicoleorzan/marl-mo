@@ -1,5 +1,4 @@
-import functools
-from gym.spaces import Discrete, Box
+from gymnasium.spaces import Discrete, Box
 from pettingzoo import ParallelEnv
 from pettingzoo.utils import wrappers
 import supersuit as ss
@@ -7,6 +6,7 @@ from pettingzoo.utils import parallel_to_aec
 import random
 from torch.distributions import normal
 import torch
+import numpy as np
 
 # set device to cpu or cuda
 device = torch.device('cpu')
@@ -77,8 +77,6 @@ class parallel_env(ParallelEnv):
         if (self.uncertainties is not None):
             assert (self.n_agents == len(self.uncertainties))
             self.uncertainties_dict = {}
-            self.min_observable_mult = {}
-            self.max_observable_mult = {}
             for idx, agent in enumerate(self.agents):
                 self.uncertainties_dict[agent] = torch.tensor([self.uncertainties[idx]]).to(device)
         else: 
@@ -90,24 +88,15 @@ class parallel_env(ParallelEnv):
         self.current_multiplier = torch.Tensor([0.]).to(device)
 
         self.max_val = self.coins_value*self.max_mult
-        #self.mf_from_interval = 0
+
+        self.observation_space = Box(low=np.array([min(self.mult_fact)]), high=np.array([max(self.mult_fact)]), shape=(1,))
+        self.action_space = Discrete(self.n_actions)
+        self.reward_space = Box(low=np.array([0]), high=np.array([max(self.mult_fact)*self.num_agents]), shape=(1,))
+        self._rewards = np.zeros(([1,self.num_objectives]))
 
     def set_active_agents(self, idxs):
         self.active_agents = ["agent_" + str(r) for r in idxs]
         self.n_active_agents = len(idxs)
-
-    # this cache ensures that same space object is returned for the same agent
-    @functools.lru_cache(maxsize=None)
-    def observation_space(self, agent):
-        # Gym spaces are defined and documented here: https://gym.openai.com/docs/#spaces
-        return Discrete(self.obs_space_size)
-
-    @functools.lru_cache(maxsize=None)
-    def action_space(self, agent):
-        if (self.fraction == True):
-            return Box(low=torch.Tensor([-0.001]), high=torch.Tensor([1.001]))
-        else:
-            return Discrete(self.n_actions)
 
     def close(self):
         pass
@@ -116,7 +105,7 @@ class parallel_env(ParallelEnv):
         self.coins = {}
         self.normalized_coins = {}
         for agent in self.agents:
-            self.coins[agent] = self.coins_value # what they have
+            self.coins[agent] = torch.Tensor([self.coins_value]) # what they have
             self.normalized_coins[agent] = 0. # what they see
 
     def observe(self):
@@ -132,6 +121,9 @@ class parallel_env(ParallelEnv):
 
             assert(obs_multiplier >= 0.)
             obs_normalized_multiplier = (obs_multiplier - min(self.mult_fact))/(max(self.mult_fact) - min(self.mult_fact))
+            if (obs_normalized_multiplier < 0.):
+                obs_normalized_multiplier = 0.
+            #print("obs_normalized_multiplier=",obs_normalized_multiplier)
             self.observations[agent] = torch.Tensor([obs_normalized_multiplier]).to(device) 
             #self.observations[agent] = torch.Tensor([obs_multiplier]).to(device) 
 
@@ -148,6 +140,7 @@ class parallel_env(ParallelEnv):
         Returns the observations for each agent
         """
         #print("mult_in=",mult_in)
+        #print("RESET ENV")
         self.agents = self.possible_agents[:]
         self.dones = {agent: False for agent in self.active_agents}
 
@@ -251,6 +244,9 @@ class parallel_env(ParallelEnv):
 
             group_reward = common_pot/self.n_active_agents*self.current_multiplier 
             individual_reward = self.coins[agent]-self.coins[agent]*actions[agent]
+            #print("group_reward=", group_reward)
+            #print("self.coins[agent]-=", self.coins[agent])
+            #print("individual_reward=",individual_reward)
 
             if (self.num_objectives == 1):
                 rewards[agent] = torch.Tensor( group_reward + individual_reward )
