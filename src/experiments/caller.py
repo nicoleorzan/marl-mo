@@ -52,6 +52,7 @@ if __name__ == '__main__':
     parser.add_argument('--scalarization_function', type=str, choices = ["linear", "ggf", "non-linear-pgg", "sigmoid"], default="linear")
     parser.add_argument('--print_step', type=int, default=1)
     parser.add_argument('--epsilon_dqn', type=float, default=0.01)
+    parser.add_argument('--c_value', type=float, default=0.)
     parser.add_argument('--lr_dqn', type=float, default=0.001)
     parser.add_argument('--sigma_beta', type=float, default=0.5)
     parser.add_argument('--betas_from_distrib', type=float, default=0) # 1 for linear, <1 for concavity, >1 for convexity

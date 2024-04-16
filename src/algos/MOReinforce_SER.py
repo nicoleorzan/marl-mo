@@ -195,25 +195,18 @@ class MOReinforce():
         #print("actions=", self.memory._actions)
         #print("rewards=", self.memory._rewards)
         #print("log probs=", self.memory._logprobs)
-        #print("R=",R)
-        a = self.memory._logprobs * (R-self.baseline)
-        #print("self.memory._logprobs * (R-self.baseline)=",self.memory._logprobs * (R-self.baseline), a.shape)
         # WRONGS ser = self.beta_utility(self.memory._logprobs * (R-self.baseline)) # R -> [batch, n_iter, n_obj]
         # R -> [batch, n_iter, n_obj]
         # expectation -> [n_iter, n_obj]
         #print("R=", R)
         #print("baseline=", self.baseline)
-        #print("R-baseline=", R-self.baseline)
-        expectation_baseline = torch.mean((self.memory._logprobs * (R-self.baseline)), dim=0)
-        #expectation = torch.mean((self.memory._logprobs * R), dim=0)
+        #expectation_baseline = torch.mean((self.memory._logprobs * (R-self.baseline)), dim=0)
+        expectation_baseline = torch.mean(((self.memory._logprobs) * (R - self.baseline) + self.c_value), dim=0)
         #print("expectation_baseline=",expectation_baseline, expectation_baseline.shape)
         #print("expectation=",expectation, expectation.shape)
         ser = self.beta_utility(expectation_baseline)
-        #print("ser=", ser.shape)
-        #print("ser=", ser, ser.shape)
+
         loss = -torch.mean(ser, dim=0)
-        #print("loss=", loss, loss.shape)
-        #loss = torch.mean(loss_batch)
 
         self.optimizer.zero_grad()
         loss.backward()

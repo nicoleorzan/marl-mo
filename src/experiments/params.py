@@ -54,6 +54,7 @@ def setup_training_hyperparams(args, trial):
             hidden_size_act = hidden_size_a,
             decayRate = 0.999,
             alpha = 0.1, # introspection level
+            c_value = args.c_value
             )
         
     if (args.algorithm == "actor-critic"):  
