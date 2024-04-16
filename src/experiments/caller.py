@@ -24,11 +24,11 @@ if __name__ == '__main__':
         nargs="*",
         type=float,
         default=[])
-    parser.add_argument( # to fill with values of betas for every agent (can be 0.)
+    """parser.add_argument( # to fill with values of betas for every agent (can be 0.)
         "--betas",
         nargs="*",
         type=float,
-        default=[])
+        default=[])"""
         
     parser.add_argument('--optuna_', type=int, default=0)
     parser.add_argument('--num_epochs', type=int, default=50000) # sarebbe total_steps
@@ -56,6 +56,7 @@ if __name__ == '__main__':
     parser.add_argument('--lr_dqn', type=float, default=0.001)
     parser.add_argument('--sigma_beta', type=float, default=0.5)
     parser.add_argument('--betas_from_distrib', type=float, default=0) # 1 for linear, <1 for concavity, >1 for convexity
+    parser.add_argument('--betas_val', type=float, default=1.) 
     parser.add_argument( # to fill with values of weights for every objective (can be 0.)
         "--weights",
         nargs="*",
@@ -72,7 +73,10 @@ if __name__ == '__main__':
     n_certain_agents = args.uncertainties.count(0.)
     n_uncertain = args.n_agents - n_certain_agents
     if (args.betas_from_distrib != 1):
+        args.betas = [args.betas_val for i in range(args.n_agents)]
         assert(len(args.betas) == args.n_agents )
+    else: 
+        args.betas = []
 
     assert (args.num_active_agents <= args.num_active_agents) 
 
