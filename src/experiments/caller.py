@@ -1,6 +1,7 @@
 import argparse
 import numpy as np
 from src.experiments.train_reinforce_ser import train_reinforce
+from src.experiments.train_actorcritic_ser import train_actorcritic
 from src.experiments.train_q_learning import train_q_learning
 from src.experiments.train_dqn import train_dqn
 #from src.experiments.train_ppo import train_ppo
@@ -42,7 +43,7 @@ if __name__ == '__main__':
     parser.add_argument('--wandb_mode', type=str, choices = ["online", "offline"], default="offline")
     parser.add_argument('--dqn_activation_function', type=str, choices = ["tanh", "relu"], default="tanh")
     parser.add_argument('--rule', type=str, choices = ["rule09", "rule11", "rule03", "rule00"], default="rule09")
-    parser.add_argument('--algorithm', type=str, choices = ["reinforce", "ppo", "dqn", "q-learning"], default="reinforce")
+    parser.add_argument('--algorithm', type=str, choices = ["reinforce", "ppo", "dqn", "q-learning", "actor-critic"], default="reinforce")
     parser.add_argument('--optimize', type=int, choices = [0, 1], default=0) # 1 for true 0 for false
     parser.add_argument('--introspective', type=int, choices = [0, 1], default=0) # 1 for true 0 for false
     parser.add_argument('--reputation_assignment', type=int, choices = [0, 1], default=0) # 1 for true 0 for false
@@ -100,6 +101,9 @@ if __name__ == '__main__':
         train_dqn(args)
     elif args.algorithm == "reinforce":
         print("calling reinforce")
-        train_reinforce(args)    
+        train_reinforce(args)   
+    elif args.algorithm == "actor-critic":
+        print("calling actor-critic algorithm")
+        train_actorcritic(args)    
     elif args.algorithm == "q-learning":
         train_q_learning(args)

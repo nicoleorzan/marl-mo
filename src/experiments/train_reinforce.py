@@ -1,5 +1,5 @@
 from src.environments import mo_epgg_v0 
-from src.algos.MOReinforce import MOReinforce
+from src.algos.MOReinforce_SER import MOReinforce
 import numpy as np
 import optuna
 from optuna.trial import TrialState

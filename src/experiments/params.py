@@ -55,6 +55,21 @@ def setup_training_hyperparams(args, trial):
             decayRate = 0.999,
             alpha = 0.1, # introspection level
             )
+        
+    if (args.algorithm == "actor-critic"):  
+        num_hidden_a = 1
+        hidden_size_a = 8
+        obs_size = 2 # m factor and action of other
+        algo_params = dict(
+            obs_size = obs_size,
+            gamma = 0.999,
+            chi = 0.001,
+            lr = 0.05,
+            n_hidden_act = num_hidden_a,
+            hidden_size_act = hidden_size_a,
+            decayRate = 0.999,
+            alpha = 0.1, # introspection level
+            )
 
     elif (args.algorithm == "dqn"):
         obs_size = 2  # m factor and action of other

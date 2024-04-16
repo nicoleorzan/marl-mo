@@ -107,6 +107,8 @@ class MOReinforce():
             self.beta = self.betas[self.idx]
         print("beta=", self.beta)
 
+        self.eps = 0.0001
+
     def reset(self):
         self.memory.reset()
         self.memory.i = 0
@@ -148,26 +150,37 @@ class MOReinforce():
     def beta_utility(self, rewards):
         #print("rewards=", rewards.shape)
         #print("self.w=", self.w.shape)
-        utility = torch.zeros(rewards.shape[0],rewards.shape[1])
-        for i in range(rewards.shape[1]):
+        utility = torch.zeros(rewards.shape[0])#,rewards.shape[1])
+        #print("utility empty=", utility.shape)
+        """for i in range(rewards.shape[1]):
             #print("rewards[:,i]=", rewards[:,i], rewards[:,i].shape)
             #print("rewards[:,i] @ self.w=",rewards[:,i] @ self.w, (rewards[:,i] @ self.w).shape)
             #print("utility[:,i]=",utility[:,i].shape)
             #print("utility[:,i]=",utility[:,i].shape)
+            #print("rewards=", rewards, rewards.shape)
             a = self.w[0]*(rewards[:,:,0]**self.beta)
-            b = self.w[1]*rewards[:,:,1]
+            #print("self.w[0]*(rewards[:,:,0]**self.beta)=",self.w[0]*(rewards[:,:,0]**self.beta), a.shape)
+            #b = self.w[1]*rewards[:,:,1]
             #print("rewards[:,0]**self.beta=", a.shape)
             #print("self.w[1]*rewards[:,1]=", b.shape)
-            utility[:,:] = self.w[0]*(rewards[:,:,0]**self.beta) + self.w[1]*rewards[:,:,1]
+            #utility[:,:] = self.w[0]*(rewards[:,:,0]**self.beta) + self.w[1]*rewards[:,:,1]"""
+        #print("rewards[:,0]=", rewards[:,0])
+        #print("(rewards[:,0]**self.beta)=", (rewards[:,0]**self.beta))
+        utility = self.w[0]*(rewards[:,0]**self.beta) + self.w[1]*rewards[:,1]
         return utility
 
     def compute_future_discounted_rewards(self):
         R = torch.zeros((self.batch_size, self.num_game_iterations, self.num_objectives))
+        standardized_rewards = (self.memory._rewards - self.memory._rewards.mean()) / (self.memory._rewards.std() + self.eps)
         #print("R shape=", R.shape)
+        
+        #rewards = self.memory._rewards
+        rewards = standardized_rewards
 
-        R[:,self.num_game_iterations-1] = self.memory._rewards[:,self.num_game_iterations-1]
+        R[:,self.num_game_iterations-1] = rewards[:,self.num_game_iterations-1]
         for r in range(self.num_game_iterations-2,-1,-1):
-            R[:,r] = self.memory._rewards[:,r] + R[:,r+1]*self.gamma
+            # CERTI R SONO NEGATIVI PERCHE` USO GLI STANDARDISED REWARDS
+            R[:,r] = rewards[:,r] + R[:,r+1]*self.gamma
         #print("R=",R)
         self.baseline = torch.mean(R, dim=0)
         #print("baseline=", self.baseline)
@@ -183,12 +196,24 @@ class MOReinforce():
         #print("rewards=", self.memory._rewards)
         #print("log probs=", self.memory._logprobs)
         #print("R=",R)
-        ser = self.beta_utility(self.memory._logprobs * (R-self.baseline))
-        #ser = self.beta_utility(self.memory._logprobs * R)
+        a = self.memory._logprobs * (R-self.baseline)
+        #print("self.memory._logprobs * (R-self.baseline)=",self.memory._logprobs * (R-self.baseline), a.shape)
+        # WRONGS ser = self.beta_utility(self.memory._logprobs * (R-self.baseline)) # R -> [batch, n_iter, n_obj]
+        # R -> [batch, n_iter, n_obj]
+        # expectation -> [n_iter, n_obj]
+        #print("R=", R)
+        #print("baseline=", self.baseline)
+        #print("R-baseline=", R-self.baseline)
+        expectation_baseline = torch.mean((self.memory._logprobs * (R-self.baseline)), dim=0)
+        #expectation = torch.mean((self.memory._logprobs * R), dim=0)
+        #print("expectation_baseline=",expectation_baseline, expectation_baseline.shape)
+        #print("expectation=",expectation, expectation.shape)
+        ser = self.beta_utility(expectation_baseline)
+        #print("ser=", ser.shape)
         #print("ser=", ser, ser.shape)
-        loss_batch = -torch.mean(ser, dim=0)
-        #print("loss_batch=", loss_batch, loss_batch.shape)
-        loss = torch.mean(loss_batch)
+        loss = -torch.mean(ser, dim=0)
+        #print("loss=", loss, loss.shape)
+        #loss = torch.mean(loss_batch)
 
         self.optimizer.zero_grad()
         loss.backward()

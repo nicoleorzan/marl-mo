@@ -97,7 +97,10 @@ def interaction_loop(config, parallel_env, active_agents, active_agents_idxs, _e
                         avg_reward[idx_agent] = torch.mean(torch.stack(rewards_dict[idx_agent]), dim=0).unsqueeze(1)
                         avg_distrib[idx_agent] = torch.mean(torch.stack(distrib_dict[idx_agent]), dim=0).unsqueeze(1)
                         if (config.num_objectives > 1):
-                            scal_func[idx_agent] = agent.beta_utility(avg_reward[idx_agent].reshape(1,1,config.num_objectives))
+                            #print("avg_reward[idx_agent]=",avg_reward[idx_agent], avg_reward[idx_agent].shape)
+                            #print("other=", avg_reward[idx_agent].reshape(1,config.num_objectives), avg_reward[idx_agent].reshape(1,config.num_objectives).shape)
+                            #print("avg_reward[idx_agent].reshape(1,config.num_objectives=",avg_reward[idx_agent].reshape(1,config.num_objectives))
+                            scal_func[idx_agent] = agent.beta_utility(avg_reward[idx_agent].reshape(1,config.num_objectives))
                 break
 
     if (_eval == True):
@@ -125,6 +128,7 @@ def objective(args, repo_name, trial=None):
         # pick a group of agents
         active_agents_idxs = pick_agents_idxs(config)
         active_agents = {"agent_"+str(key): agents["agent_"+str(key)] for key, _ in zip(active_agents_idxs, agents)}
+        print("active_agents_idxs=", active_agents_idxs)
 
         [agent.reset() for _, agent in active_agents.items()]
 
@@ -166,7 +170,7 @@ def objective(args, repo_name, trial=None):
             dff_rew_per_mf = dict(("avg_rew_mf"+str(mf), torch.mean(torch.stack([ag_coop for _, ag_coop in rew_agents_mf[mf].items()]))) for mf in config.mult_fact)
 
         if (config.wandb_mode == "online" and float(epoch)%float(config.print_step) == 0.):
-            print("logging")
+            #print("logging")
             for idx_agent, agent in active_agents.items():
                 df_avg_coop = {idx_agent+"avg_coop": avg_coop[idx_agent]}
                 df_scal_func = {}
@@ -190,8 +194,8 @@ def objective(args, repo_name, trial=None):
 
         if (epoch%config.print_step == 0):
             print("\nEpoch : {}".format(epoch))
-            print("dff_rew_per_mf=", dff_rew_per_mf)
-            print("coop_agents_mf=",coop_agents_mf)
+            #print("dff_rew_per_mf=", dff_rew_per_mf)
+            #print("coop_agents_mf=",coop_agents_mf)
             #print("distrib_agents_mf=",distrib_agents_mf)
             print("prob cooperazione=",dff_distrib_per_mf)
 
@@ -206,7 +210,7 @@ def train_reinforce(args):
     if (args.uncertainties.count(0.) != args.n_agents):
         unc_string = "unc_"
 
-    repo_name = "NEW_MO-EPGG_"+ str(args.n_agents) + "agents_" + \
+    repo_name = "FIXED_NEW_MO-EPGG_"+ str(args.n_agents) + "agents_" + \
         unc_string + args.algorithm + "_mf" + str(args.mult_fact) + \
         "_rep" + str(args.reputation_enabled) + "_n_act_agents" + str(args.num_active_agents)
     
