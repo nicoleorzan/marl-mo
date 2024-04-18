@@ -248,7 +248,7 @@ def train_dqn(args):
     if (args.uncertainties.count(0.) != args.n_agents):
         unc_string = "unc_"
 
-    repo_name = "NEW_MO-EPGG_"+ str(args.n_agents) + "agents_" + \
+    repo_name = "OTHER_NEW_MO-EPGG_"+ str(args.n_agents) + "agents_" + \
         unc_string + args.algorithm + "_mf" + str(args.mult_fact) + \
         "_rep" + str(args.reputation_enabled) + "_n_act_agents" + str(args.num_active_agents)
     
