@@ -65,6 +65,7 @@ class MoDQN():
 
         self.reputation = torch.Tensor([1.])
         self.old_reputation = self.reputation
+        self.previous_action = torch.Tensor([1.])
 
         self.is_dummy = False
         self.idx = idx
@@ -126,9 +127,6 @@ class MoDQN():
         return random.choice(ties)
         
     def select_action(self, state_act, _eval=False):
-        if (self._print == True and self.idx == 0):
-            print("take action")
-
         #print("state_act", state_act)
         state_act = state_act.view(-1,self.input_act)
 
@@ -142,17 +140,13 @@ class MoDQN():
             if torch.rand(1) < self.epsilon:
                 action = random.choice([i for i in range(self.action_size)])
                 if (self._print == True and self.idx == 0):
-                    print("====> RAND")
-                    print("action=", action)
+                    print("take action (rand): action=", action)
             else:
                 act_values = self.policy_act.get_values(state=state_act)[0].view(1, self.num_objectives, self.action_size)
                 scalarized_action_val = self.scal_func(act_values, self.w)
                 action = self.argmax(scalarized_action_val)
                 if (self._print == True and self.idx == 0):
-                    print("no rand")
-                    print("act_val=", act_values)
-                    print("scalarized_action_val=",scalarized_action_val)
-                    print("action=", action)
+                    print("take action: action=", action)
 
         self.previous_action = action
                 
@@ -168,7 +162,10 @@ class MoDQN():
         return out
     
     def non_linear_pgg(self, x, w):
-        out = w[0]*(x[:,0])**self.beta + w[1]*x[:,1]# + w[2]*x[:,2]
+        if (self.num_objectives == 3):
+            out = w[0]*(x[:,0])**self.beta + w[1]*x[:,1] + w[2]*x[:,2]
+        elif (self.num_objectives == 2):
+            out = w[0]*(x[:,0])**self.beta + w[1]*x[:,1]
         return out
     
     def sigmoid(self, x, w):
@@ -198,10 +195,8 @@ class MoDQN():
        
         non_final_mask = torch.tensor(tuple(map(lambda s: s is not None, batch_next_state)), device=self.device, dtype=torch.uint8)
         try: #sometimes all next states are false
-            non_final_next_states = torch.stack([s for s in batch_next_state if s is not None])#.view(-1,1)
-            #non_final_next_states = torch.tensor([s for s in batch_next_state if s is not None], device=self.device, dtype=torch.float).view(-1,1)
+            non_final_next_states = torch.tensor([s for s in batch_next_state if s is not None], device=self.device, dtype=torch.float).view(-1,1)
             empty_next_state_values = False
-            #print("non_final_next_states=", non_final_next_states, non_final_next_states.shape)
         except:
             non_final_next_states = None
             empty_next_state_values = True
@@ -215,21 +210,23 @@ class MoDQN():
         if (self._print == True and self.idx == 0):
             print("compute loss")
         batch_state, batch_action, batch_reward, batch_dones, non_final_next_states, non_final_mask, empty_next_state_values = batch_vars
-        #print("batch_state=",batch_state)
         
         current_q_values = self.policy_act.get_values(batch_state).view(self.batch_size, self.num_objectives, self.action_size)
         if (self._print == True and self.idx == 0):
-            print("current_q_values", current_q_values.shape)
-            print("scal val used to take act", self.scal_func(current_q_values, self.w).shape)
-        #scalarized_q_values = self.scal_func(current_q_values, self.w)
-        #print("scal vals=",scalarized_q_values)
-        #print("batch_actions=", batch_action, batch_action.shape)
+            print("batch_state=",batch_state, batch_state.shape)
+            print("current_q_values", current_q_values, current_q_values.shape)
+            print("scal val used to take act", self.scal_func(current_q_values, self.w), self.scal_func(current_q_values, self.w).shape)
+
         batch_action = batch_action.repeat(1, self.num_objectives).view(self.batch_size, self.num_objectives, 1)
         current_q_values = torch.gather(current_q_values, dim=2, index=batch_action)
         if (self._print == True and self.idx == 0):
-            print("batch_actions=", batch_action.shape)
-            print("current q values filtered by acts=", current_q_values.shape)
-            
+            print("batch_actions=", batch_action, batch_action.shape)
+            print("current q values filtered by acts=",current_q_values, current_q_values.shape)
+            print("\n")
+        if (self._print == True and self.idx == 0):   
+            print("batch_reward.shape=",batch_reward, batch_reward.shape)
+            print("batch rewrd with right shape: batch_reward.unsqueeze(-1)=",batch_reward.unsqueeze(-1), batch_reward.unsqueeze(-1).shape)
+            print("\n")
         #compute target
         with torch.no_grad():
             max_next_q_values = torch.zeros((self.batch_size, self.num_objectives, 1), device=self.device, dtype=torch.float)#.unsqueeze(dim=1)
@@ -238,9 +235,10 @@ class MoDQN():
                 print("empty_next_state_values=",empty_next_state_values)
             if not empty_next_state_values:
                 # first we gotta compute MAX NEXT ACTION
+                if (self._print == True and self.idx == 0):
+                    print("non_final_next_states=",non_final_next_states, non_final_next_states.shape)
                 max_next_action = self.get_max_next_state_action(non_final_next_states)
                 if (self._print == True and self.idx == 0):
-                    print("non_final_next_states=",non_final_next_states.shape)
                     print("max_next_action=",max_next_action, max_next_action.shape)
                 max_next_action = max_next_action.repeat(1, self.num_objectives).view(self.batch_size, self.num_objectives, 1)
                 dist = self.policy_act_target.get_values(state=non_final_next_states).view(self.batch_size, self.num_objectives, self.action_size) #.act(state=non_final_next_states, greedy=False, get_distrib=True)
@@ -257,7 +255,7 @@ class MoDQN():
                 print("max_next_q_values=",max_next_q_values, max_next_q_values.shape)
             if (self._print == True and self.idx == 0):
                 print("self.gamma*max_next_q_values=",(self.gamma*max_next_q_values).shape)
-                print("batch_reward.shape=",batch_reward.shape)
+                #print("batch_reward.shape=",batch_reward, batch_reward.shape)
 
             expected_q_values = batch_reward.unsqueeze(-1) + self.gamma*max_next_q_values
             if (self._print == True and self.idx == 0):
@@ -305,9 +303,9 @@ class MoDQN():
         max_vals = scalarized_next_vals.max(dim=1)[1]#.view(-1, 1)
         if (self._print == True and self.idx == 0):
             print("GET MAX NEXT STATE ACTION")
-            print("next_vals=", next_vals.shape)
-            print("scalarized_next_vals=", scalarized_next_vals.shape)
-            print("max_vals=",max_vals.shape)
+            print("next_vals=", next_vals, next_vals.shape)
+            print("scalarized_next_vals=", scalarized_next_vals, scalarized_next_vals.shape)
+            print("max_vals=",max_vals, max_vals.shape)
         self._print == True 
         return max_vals
     
