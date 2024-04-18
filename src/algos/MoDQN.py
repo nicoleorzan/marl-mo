@@ -166,6 +166,8 @@ class MoDQN():
             out = w[0]*(x[:,0])**self.beta + w[1]*x[:,1] + w[2]*x[:,2]
         elif (self.num_objectives == 2):
             out = w[0]*(x[:,0])**self.beta + w[1]*x[:,1]
+        elif (self.num_objectives == 1):
+            out = w[0]*x[:,0]
         return out
     
     def sigmoid(self, x, w):
