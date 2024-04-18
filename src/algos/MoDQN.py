@@ -129,7 +129,7 @@ class MoDQN():
         if (self._print == True and self.idx == 0):
             print("take action")
 
-        print("state_act", state_act)
+        #print("state_act", state_act)
         state_act = state_act.view(-1,self.input_act)
 
         if (_eval == True):
@@ -168,7 +168,7 @@ class MoDQN():
         return out
     
     def non_linear_pgg(self, x, w):
-        out = w[0]*(x[:,0])**self.beta + w[1]*x[:,1] + w[2]*x[:,2]
+        out = w[0]*(x[:,0])**self.beta + w[1]*x[:,1]# + w[2]*x[:,2]
         return out
     
     def sigmoid(self, x, w):
