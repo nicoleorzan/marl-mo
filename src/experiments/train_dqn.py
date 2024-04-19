@@ -18,10 +18,10 @@ def define_agents(config):
     agents = {}
     for idx in range(config.n_agents):
         if (config.is_dummy[idx] == 0):
-            if (config.num_objectives == 1):
-                agents['agent_'+str(idx)] = DQN(config, idx) 
-            else:
-                agents['agent_'+str(idx)] = MoDQN(config, idx) 
+            #if (config.num_objectives == 1):
+            #    agents['agent_'+str(idx)] = DQN(config, idx) 
+            #else:
+            agents['agent_'+str(idx)] = MoDQN(config, idx) 
         else: 
             agents['agent_'+str(idx)] = NormativeAgent(config, idx)
     return agents
@@ -248,7 +248,7 @@ def train_dqn(args):
     if (args.uncertainties.count(0.) != args.n_agents):
         unc_string = "unc_"
 
-    repo_name = "NEW_MO-EPGG_"+ str(args.n_agents) + "agents_" + \
+    repo_name = "OTHER_NEW_MO-EPGG_"+ str(args.n_agents) + "agents_" + \
         unc_string + args.algorithm + "_mf" + str(args.mult_fact) + \
         "_rep" + str(args.reputation_enabled) + "_n_act_agents" + str(args.num_active_agents)
     

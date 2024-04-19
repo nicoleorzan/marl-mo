@@ -50,7 +50,7 @@ if __name__ == '__main__':
     parser.add_argument('--old_actions_in_input', type=int, choices = [0, 1], default=1) # 1 for true 0 for false
     parser.add_argument('--mf_from_interval', type=int, choices = [0, 1], default=0) # 1 for true 0 for false
     parser.add_argument('--scalarization_function', type=str, choices = ["linear", "ggf", "non-linear-pgg", "sigmoid"], default="linear")
-    parser.add_argument('--print_step', type=int, default=1)
+    parser.add_argument('--print_step', type=int, default=20)
     parser.add_argument('--epsilon_dqn', type=float, default=0.01)
     parser.add_argument('--c_value', type=float, default=0.)
     parser.add_argument('--lr_dqn', type=float, default=0.001)
@@ -80,8 +80,8 @@ if __name__ == '__main__':
 
     assert (args.num_active_agents <= args.num_active_agents) 
 
-    if (args.scalarization_function == "non-linear-pgg"):
-        assert(len(args.weights) == 3)
+    #if (args.scalarization_function == "non-linear-pgg"):
+    #    assert(len(args.weights) == 3)
 
     # if GGF is employed
     if (args.scalarization_function == "ggf"):
