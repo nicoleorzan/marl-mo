@@ -9,8 +9,8 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument('-folder', type=str, default='data', help="Folder to save data in.")
-    parser.add_argument('-f', type=float, default=0.5, help="The f value of the game.")
-    parser.add_argument('-res_strategy', type=float, default=0.01, help="Strategy resolution")
+    parser.add_argument('-f', type=float, default=2.5, help="The f value of the game.")
+    parser.add_argument('-res_strategy', type=float, default=0.0001, help="Strategy resolution")
     parser.add_argument('-beta', type=float, default=0.5, help="Beta value for the utility function")
 
     args = parser.parse_args()
@@ -37,11 +37,11 @@ if __name__ == "__main__":
     data = [[], []]
     columns = ['O1', 'O2', 'JointStrategy', 'SER']
     utility_tuple = (u_beta([1, 1], beta), u_beta([1, 1], beta))
-    print("utility_tuple=",utility_tuple)
+    print("utility_tuple=", utility_tuple)
     # Identify the joint strategies that are Nash equilibria
     expected_payoffs = [[], []]
     for joint_strat in all_joint_strategies:
-        print("joint strategy=", joint_strat)
+        #print("joint strategy=", joint_strat)
         #utility = 1 * (np.abs(p[0]) ** beta) + (1 * p[1])
         is_ne = verify_nash(game, utility_tuple, joint_strat)
         if is_ne:
