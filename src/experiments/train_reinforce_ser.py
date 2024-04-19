@@ -94,13 +94,14 @@ def interaction_loop(config, parallel_env, active_agents, active_agents_idxs, _e
                     for idx_agent, agent in active_agents.items():
                         avg_coop[idx_agent] = torch.mean(torch.stack(actions_dict[idx_agent]).float())
                         # computing avg_reward for every objective (expectation)
-                        avg_reward[idx_agent] = torch.mean(torch.stack(rewards_dict[idx_agent]), dim=0).unsqueeze(1)
+                        avg_reward[idx_agent] = torch.mean(torch.stack(rewards_dict[idx_agent]), dim=0)#.unsqueeze(1)
                         avg_distrib[idx_agent] = torch.mean(torch.stack(distrib_dict[idx_agent]), dim=0).unsqueeze(1)
                         if (config.num_objectives > 1):
                             #print("avg_reward[idx_agent]=",avg_reward[idx_agent], avg_reward[idx_agent].shape)
                             #print("other=", avg_reward[idx_agent].reshape(1,config.num_objectives), avg_reward[idx_agent].reshape(1,config.num_objectives).shape)
                             #print("avg_reward[idx_agent].reshape(1,config.num_objectives=",avg_reward[idx_agent].reshape(1,config.num_objectives))
-                            scal_func[idx_agent] = agent.beta_utility(avg_reward[idx_agent].reshape(1,config.num_objectives))
+                            #print("avg_reward[idx_agent].reshape(1,config.num_objectives)=",avg_reward[idx_agent].reshape(1,config.num_objectives))
+                            scal_func[idx_agent] = agent.beta_utility(avg_reward[idx_agent])
                 break
 
     if (_eval == True):
@@ -128,7 +129,7 @@ def objective(args, repo_name, trial=None):
         # pick a group of agents
         active_agents_idxs = pick_agents_idxs(config)
         active_agents = {"agent_"+str(key): agents["agent_"+str(key)] for key, _ in zip(active_agents_idxs, agents)}
-        print("active_agents_idxs=", active_agents_idxs)
+        #print("active_agents_idxs=", active_agents_idxs)
 
         [agent.reset() for _, agent in active_agents.items()]
 

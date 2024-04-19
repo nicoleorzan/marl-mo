@@ -115,13 +115,14 @@ class MOReinforce():
         self.accrued_reward_observation = torch.zeros(self.num_objectives)
             
     def select_action(self, state_act, _eval=False):
-
+        #print("state_act=", state_act)
         self.state_act = state_act.view(-1,self.input_act)
         #print("self.state_act=", self.state_act)
 
         out = self.policy_act(self.state_act)
         #print("out=", out)
         dist = Categorical(out)
+        #print("dist=", dist)
 
         if (_eval == True):
             act = torch.argmax(out).detach().unsqueeze(0)
@@ -130,6 +131,7 @@ class MOReinforce():
         logprob = dist.log_prob(act) # negativi
 
         self.previous_action = act
+        #print("act=", act)
         
         return act, logprob
 
@@ -148,65 +150,59 @@ class MOReinforce():
         self.memory.i += 1
 
     def beta_utility(self, rewards):
-        #print("rewards=", rewards.shape)
-        #print("self.w=", self.w.shape)
-        utility = torch.zeros(rewards.shape[0])#,rewards.shape[1])
-        #print("utility empty=", utility.shape)
-        """for i in range(rewards.shape[1]):
-            #print("rewards[:,i]=", rewards[:,i], rewards[:,i].shape)
-            #print("rewards[:,i] @ self.w=",rewards[:,i] @ self.w, (rewards[:,i] @ self.w).shape)
-            #print("utility[:,i]=",utility[:,i].shape)
-            #print("utility[:,i]=",utility[:,i].shape)
-            #print("rewards=", rewards, rewards.shape)
-            a = self.w[0]*(rewards[:,:,0]**self.beta)
-            #print("self.w[0]*(rewards[:,:,0]**self.beta)=",self.w[0]*(rewards[:,:,0]**self.beta), a.shape)
-            #b = self.w[1]*rewards[:,:,1]
-            #print("rewards[:,0]**self.beta=", a.shape)
-            #print("self.w[1]*rewards[:,1]=", b.shape)
-            #utility[:,:] = self.w[0]*(rewards[:,:,0]**self.beta) + self.w[1]*rewards[:,:,1]"""
-        #print("rewards[:,0]=", rewards[:,0])
-        #print("(rewards[:,0]**self.beta)=", (rewards[:,0]**self.beta))
-        utility = self.w[0]*(rewards[:,0]**self.beta) + self.w[1]*rewards[:,1]
+        #print("rewards=",rewards, rewards.shape)
+        #assert(rewards >= 0.) # beta utility can only work with positive numbers
+        if (self.num_objectives == 2):
+            collective_utility = self.w[0]*(torch.select(rewards,dim=-1,index=0)**self.beta) # self.w[0]*(rewards[0]**self.beta)
+            individual_utility = self.w[1]*torch.select(rewards,dim=-1,index=1)
+            utility = collective_utility + individual_utility
+            #print("collective utility=",collective_utility, collective_utility.shape)
+            #print("individual_utility=",individual_utility)
+        else:
+            utility = rewards
         return utility
 
     def compute_future_discounted_rewards(self):
         R = torch.zeros((self.batch_size, self.num_game_iterations, self.num_objectives))
         standardized_rewards = (self.memory._rewards - self.memory._rewards.mean()) / (self.memory._rewards.std() + self.eps)
-        #print("R shape=", R.shape)
         
-        #rewards = self.memory._rewards
-        rewards = standardized_rewards
+        rewards = self.memory._rewards
+        #rewards = standardized_rewards
 
         R[:,self.num_game_iterations-1] = rewards[:,self.num_game_iterations-1]
         for r in range(self.num_game_iterations-2,-1,-1):
             # CERTI R SONO NEGATIVI PERCHE` USO GLI STANDARDISED REWARDS
             R[:,r] = rewards[:,r] + R[:,r+1]*self.gamma
-        #print("R=",R)
         self.baseline = torch.mean(R, dim=0)
-        #print("baseline=", self.baseline)
-        #print("R-baseline=", R-self.baseline)
 
         return R
     
     def update_mo_ser(self):
-        R = self.compute_future_discounted_rewards()
+        R = self.compute_future_discounted_rewards() #R -> [batch, n_iter, n_obj]
         
-        #print("states=", self.memory._states)
-        #print("actions=", self.memory._actions)
-        #print("rewards=", self.memory._rewards)
-        #print("log probs=", self.memory._logprobs)
         # WRONGS ser = self.beta_utility(self.memory._logprobs * (R-self.baseline)) # R -> [batch, n_iter, n_obj]
-        # R -> [batch, n_iter, n_obj]
-        # expectation -> [n_iter, n_obj]
-        #print("R=", R)
-        #print("baseline=", self.baseline)
+        # order is:
+        # [batch, n_iter, n_obj] --> sum over n_iter, so [batch, n_obj] --> avg over batch, so [n_obj] --> utility function --> scalar
         #expectation_baseline = torch.mean((self.memory._logprobs * (R-self.baseline)), dim=0)
-        expectation_baseline = torch.mean(((self.memory._logprobs) * (R - self.baseline) + self.c_value), dim=0)
-        #print("expectation_baseline=",expectation_baseline, expectation_baseline.shape)
-        #print("expectation=",expectation, expectation.shape)
-        ser = self.beta_utility(expectation_baseline)
-
-        loss = -torch.mean(ser, dim=0)
+        #G_tau =  torch.sum((R - self.baseline), dim=1)
+        #print("R=", R, R.shape)
+        #print("self.memory._logprobs=", self.memory._logprobs, self.memory._logprobs.shape)
+        #G_tau = torch.sum(R, dim=1)
+        #print("G_tau=", G_tau, G_tau.shape)
+        #sum_logprobs = torch.sum((self.memory._logprobs), dim=1)
+        #print("sum_logprobs=",sum_logprobs.shape)
+        #print("self.beta_utility(R)=", self.beta_utility(R).unsqueeze(-1).shape)
+        var = self.memory._logprobs.squeeze(-1) * self.beta_utility(R) #R  # + self.c_value
+        #print("var =", var, var.shape)
+        #print("var.view(-1)=",var.view(-1).shape)
+        var = var.view(-1)
+        # OLD expectation_baseline = torch.mean(((self.memory._logprobs) * (R - self.baseline) + self.c_value), dim=0)
+        loss = -torch.mean(var, dim=0)
+        #expectation = torch.sum(var, dim=0)
+        #print("expectation=", loss, loss.shape)
+        #ser = self.beta_utility(expectation_baseline)
+        #print("ser=", expectation)
+        #loss = -expectation
 
         self.optimizer.zero_grad()
         loss.backward()
