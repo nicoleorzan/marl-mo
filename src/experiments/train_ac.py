@@ -1,5 +1,5 @@
 from src.environments import mo_epgg_v0 
-from src.algos.MOActorCritic_SER import MOActorCritic
+from src.algos.MOReinforce_SER_new import MOReinforce
 import numpy as np
 import torch
 import wandb
@@ -12,7 +12,7 @@ torch.autograd.set_detect_anomaly(True)
 def define_agents(config):
     agents = {}
     for idx in range(config.n_agents):
-        agents['agent_'+str(idx)] = MOActorCritic(config, idx) 
+        agents['agent_'+str(idx)] = MOReinforce(config, idx) 
     return agents
 
 def interaction_loop(config, parallel_env, active_agents, active_agents_idxs, _eval=False, mf_input=None):
@@ -47,24 +47,19 @@ def interaction_loop(config, parallel_env, active_agents, active_agents_idxs, _e
         for i in range(config.num_game_iterations):
             #print("i=",i)
 
-            actions = {}; states = next_states; logprobs = {}; values = {}
+            actions = {}; states = next_states; logprobs = {}; critic = {}
             #print("states=", states)
             for idx_agent, agent in active_agents.items():
-                action, logprob, _, value = active_agents[idx_agent].policy.get_action_and_value(obs=states[idx_agent], action=None, _eval=_eval)
-                #a, logp = active_agents[idx_agent].select_action(states[idx_agent], _eval)
-                logprobs[idx_agent] = logprob
-                actions[idx_agent] = action
-                values[idx_agent] = value
+                a, logp, dist = active_agents[idx_agent].select_action(states[idx_agent], _eval)
+                logprobs[idx_agent] = logp
+                actions[idx_agent] = a
+                critic[idx_agent] = dist
     
             #print("actions=", actions)
             #print("logprobs=",logprobs)
 
             _, rewards, done, _ = parallel_env.step(actions)
             #print("rewards=", rewards)
-            """for idx_agent, agent in active_agents.items():
-                rewards[idx_agent] = torch.Tensor([0.])
-                if actions[idx_agent] == 1:
-                    rewards[idx_agent] = torch.Tensor([1.])"""
           
             #print("rewards=", rewards)
             if (config.introspective == True):
@@ -92,7 +87,7 @@ def interaction_loop(config, parallel_env, active_agents, active_agents_idxs, _e
             if (_eval == False):
                 # save iteration
                 for idx_agent, agent in active_agents.items():
-                    agent.append_to_replay(i_batch, states[idx_agent], actions[idx_agent], rewards[idx_agent], next_states[idx_agent], logprobs[idx_agent], values[idx_agent], done)
+                    agent.append_to_replay(i_batch, states[idx_agent], actions[idx_agent], rewards[idx_agent], next_states[idx_agent], logprobs[idx_agent], critic[idx_agent], done)
                     agent.return_episode =+ rewards[idx_agent]
 
             if done:
@@ -100,10 +95,14 @@ def interaction_loop(config, parallel_env, active_agents, active_agents_idxs, _e
                     for idx_agent, agent in active_agents.items():
                         avg_coop[idx_agent] = torch.mean(torch.stack(actions_dict[idx_agent]).float())
                         # computing avg_reward for every objective (expectation)
-                        avg_reward[idx_agent] = torch.mean(torch.stack(rewards_dict[idx_agent]), dim=0).unsqueeze(1)
+                        avg_reward[idx_agent] = torch.mean(torch.stack(rewards_dict[idx_agent]), dim=0)#.unsqueeze(1)
                         avg_distrib[idx_agent] = torch.mean(torch.stack(distrib_dict[idx_agent]), dim=0).unsqueeze(1)
                         if (config.num_objectives > 1):
-                            scal_func[idx_agent] = agent.beta_utility(avg_reward[idx_agent].reshape(1,1,config.num_objectives))
+                            #print("avg_reward[idx_agent]=",avg_reward[idx_agent], avg_reward[idx_agent].shape)
+                            #print("other=", avg_reward[idx_agent].reshape(1,config.num_objectives), avg_reward[idx_agent].reshape(1,config.num_objectives).shape)
+                            #print("avg_reward[idx_agent].reshape(1,config.num_objectives=",avg_reward[idx_agent].reshape(1,config.num_objectives))
+                            #print("avg_reward[idx_agent].reshape(1,config.num_objectives)=",avg_reward[idx_agent].reshape(1,config.num_objectives))
+                            scal_func[idx_agent] = agent.beta_utility(avg_reward[idx_agent])
                 break
 
     if (_eval == True):
@@ -131,7 +130,7 @@ def objective(args, repo_name, trial=None):
         # pick a group of agents
         active_agents_idxs = pick_agents_idxs(config)
         active_agents = {"agent_"+str(key): agents["agent_"+str(key)] for key, _ in zip(active_agents_idxs, agents)}
-        print("active_agents_idxs=", active_agents_idxs)
+        #print("active_agents_idxs=", active_agents_idxs)
 
         [agent.reset() for _, agent in active_agents.items()]
 
@@ -145,7 +144,7 @@ def objective(args, repo_name, trial=None):
         #print("\n\nUPDATE!!")
         losses = {}
         for idx_agent, agent in active_agents.items():
-            losses[idx_agent] = agent.update()
+            losses[idx_agent] = agent.update_mo_ser()
                
         # evaluation step
         #print("\n\nEVAL")
@@ -198,7 +197,7 @@ def objective(args, repo_name, trial=None):
         if (epoch%config.print_step == 0):
             print("\nEpoch : {}".format(epoch))
             #print("dff_rew_per_mf=", dff_rew_per_mf)
-            print("coop_agents_mf=",coop_agents_mf)
+            #print("coop_agents_mf=",coop_agents_mf)
             #print("distrib_agents_mf=",distrib_agents_mf)
             print("prob cooperazione=",dff_distrib_per_mf)
 
@@ -207,13 +206,13 @@ def objective(args, repo_name, trial=None):
     wandb.finish()
 
 
-def train_actorcritic(args):
+def train_ac(args):
 
     unc_string = "no_unc_"
     if (args.uncertainties.count(0.) != args.n_agents):
         unc_string = "unc_"
 
-    repo_name = "NEW_MO-EPGG_"+ str(args.n_agents) + "agents_" + \
+    repo_name = "ACTOR-CRITIC_NEW_MO-EPGG_"+ str(args.n_agents) + "agents_" + \
         unc_string + args.algorithm + "_mf" + str(args.mult_fact) + \
         "_rep" + str(args.reputation_enabled) + "_n_act_agents" + str(args.num_active_agents)
     

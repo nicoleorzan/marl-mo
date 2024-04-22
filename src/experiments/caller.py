@@ -1,11 +1,9 @@
 import argparse
 import numpy as np
 from src.experiments.train_reinforce_ser import train_reinforce
-#from src.experiments.train_actorcritic_ser import train_actorcritic
+from src.experiments.train_ac import train_ac
 from src.experiments.train_q_learning import train_q_learning
 from src.experiments.train_dqn import train_dqn
-#from src.experiments.train_ppo import train_ppo
-#from src.experiments.train_ppo_single_obj import train_ppo_single_obj
 
 def non_increasing(L):
     return all(x>y for x, y in zip(L, L[1:]))
@@ -107,8 +105,8 @@ if __name__ == '__main__':
     elif args.algorithm == "reinforce":
         print("calling reinforce")
         train_reinforce(args)   
-    #elif args.algorithm == "actor-critic":
-    #    print("calling actor-critic algorithm")
-    #    train_actorcritic(args)    
+    elif args.algorithm == "actor-critic":
+        print("calling actor-critic algorithm")
+        train_ac(args)    
     elif args.algorithm == "q-learning":
         train_q_learning(args)
