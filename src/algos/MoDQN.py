@@ -92,13 +92,13 @@ class MoDQN():
         elif (self.scalarization_function == "sigmoid"):
             self.scal_func = self.sigmoid
 
-        self._print = False
+        self._print = True
 
         if (self.betas_from_distrib):
             d = normal.Normal(1., self.sigma_beta)
             self.beta = d.sample()
-            if (self.beta < 0.):
-                self.beta = -self.beta          
+            #if (self.beta < 0.):
+            #    self.beta = -self.beta          
         else:
             self.beta = self.betas[self.idx]
         print("beta=", self.beta)
@@ -257,15 +257,18 @@ class MoDQN():
                 print("max_next_q_values=",max_next_q_values, max_next_q_values.shape)
             if (self._print == True and self.idx == 0):
                 print("self.gamma*max_next_q_values=",(self.gamma*max_next_q_values).shape)
-                #print("batch_reward.shape=",batch_reward, batch_reward.shape)
+                print("batch_reward.shape=",batch_reward, batch_reward.shape)
 
             expected_q_values = batch_reward.unsqueeze(-1) + self.gamma*max_next_q_values
             if (self._print == True and self.idx == 0):
                 print("expected_q_values=",expected_q_values.shape)
 
         diff = (expected_q_values - current_q_values)
+        print("diff=", diff.shape)
         loss = self.MSE(diff)
+        print("mse loss=", loss.shape)
         loss = loss.mean()
+        print("loss=", loss.shape)
 
         return loss
 
