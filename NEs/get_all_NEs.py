@@ -8,10 +8,10 @@ import argparse
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('-folder', type=str, default='data', help="Folder to save data in.")
+    parser.add_argument('-folder', type=str, default='results', help="Folder to save data in.")
     parser.add_argument('-f', type=float, default=2.5, help="The f value of the game.")
-    parser.add_argument('-res_strategy', type=float, default=0.0001, help="Strategy resolution")
-    parser.add_argument('-beta', type=float, default=0.5, help="Beta value for the utility function")
+    parser.add_argument('-res_strategy', type=float, default=0.001, help="Strategy resolution")
+    parser.add_argument('-beta', type=float, default=1., help="Beta value for the utility function")
 
     args = parser.parse_args()
 
@@ -22,9 +22,10 @@ if __name__ == "__main__":
     res_strategy = args.res_strategy
     beta = args.beta
 
-    # for f in [0.5, 1.5, 2.5]:
-    # for beta in [0.5, 1, 2]:
-    print('Running for f =', f, 'and beta =', beta)
+    print('Finding Nash equilibria for a two-player Extended Public Goods Game')
+    print('parameters: f =', f, ', beta =', beta, ', strategy resolution:', res_strategy)
+    print('Might take a while... (consider increasing the strategy resolution if it takes too long)')
+
     if f == 0.5:
         game = pgg_f_05
     elif f == 1.5:
@@ -37,7 +38,7 @@ if __name__ == "__main__":
     data = [[], []]
     columns = ['O1', 'O2', 'JointStrategy', 'SER']
     utility_tuple = (u_beta([1, 1], beta), u_beta([1, 1], beta))
-    print("utility_tuple=", utility_tuple)
+    #print("utility_tuple=", utility_tuple)
     # Identify the joint strategies that are Nash equilibria
     expected_payoffs = [[], []]
     for joint_strat in all_joint_strategies:
@@ -59,3 +60,4 @@ if __name__ == "__main__":
         file = f'{folder}/pgg_f{f}_beta{beta}_NEs_res_s{res_strategy}_player{player}.csv'
         df = pd.DataFrame(data[player], columns=columns)
         df.to_csv(file, index=False)
+        print(f'Saved data for player {player} in {file}.')
