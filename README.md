@@ -15,14 +15,14 @@ Authors: Nicole Orzan, Erman Acar, Davide Grossi, Roxana Rădulescu
 
 ### Repository layout
 
-- [`/NEs`](NEs) Code that computes Nash Equilibria of the EPGG under the SER optimisation criteria + plotting functions
-- [`/src`](src) Souce Code that trains single and multi-objective deep RL agents
-    - [`/algos`](algos) Implementation of **MO-DQN** (SER), **MO-Actor Critic** (SER), **MO-Reinforce** (SER and ESR), single-objective **DQN** and single-objective **Reinforce**
-    - [`/experiments`](experiments) Training loops and training instantiation function (caller.py)
-    - [`/environments`](environments) MO-EPGG implementation
-    - [`/utils`](utils) helper functions for the game
-- requirements.txt # Python dependencies
-- setup.py # Editable install for development
+- [`/NEs`](NEs): Code that computes Nash Equilibria of the EPGG under the SER optimisation criteria + plotting functions
+- [`/src`](src): Souce Code that trains single and multi-objective deep RL agents
+    - [`/algos`](algos): Implementation of **MO-DQN** (SER), **MO-Actor Critic** (SER), **MO-Reinforce** (SER and ESR), single-objective **DQN** and single-objective **Reinforce**
+    - [`/experiments`](experiments): Training loops and training instantiation function (caller.py)
+    - [`/environments`](environments): MO-EPGG implementation
+    - [`/utils`](utils)" Helper functions for the game
+- requirements.txt: Python dependencies
+- setup.py: Installer
 - README.md
 
 ### Example Install
