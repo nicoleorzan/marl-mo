@@ -12,13 +12,26 @@ Authors: Nicole Orzan, Erman Acar, Davide Grossi, Roxana Rădulescu
 - Each agent uses a non-linear utility (risk preference) over the payoff vector, and we study how this interacts with incentive-alignment uncertainty. 
 - With MORL we show regimes where preferences + uncertainty promote or suppress cooperation even in mixed-motive settings. 
 
-### Suggested Install
+### Example Install
 
 ```
 python3 -m venv env
 source env/bin/activate
 pip install -e .
-pip install -r requirements.txt
+pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
+```
+
+To launch a trial run, in `src/experiments/` give the comman:
+
+```
+python3 caller.py
+```
+This defaults to running a 2-agents 2-objectives MO-EPGG, with MO-deep-Q Learning for each agent and linear scalarization function. Other default parameters can be found in the file.
+
+For a custom run, you can give:
+
+```
+python3 caller.py --n_agents 4 --
 ```
 
 ### Citing
