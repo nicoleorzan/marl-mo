@@ -1,11 +1,11 @@
-from src.environments import mo_epgg_v0
-from src.algos.PPO import PPO
+from environments import mo_epgg_v0
+from algos.PPO import PPO
 import numpy as np
 import torch
 import wandb
-from src.utils.social_norm import SocialNorm
-from src.utils.utils import pick_agents_idxs
-from src.experiments.params import setup_training_hyperparams
+from utils.social_norm import SocialNorm
+from utils.utils import pick_agents_idxs
+from experiments.params import setup_training_hyperparams
 
 torch.autograd.set_detect_anomaly(True)
 _print = 0

@@ -1,5 +1,5 @@
 
-from src.algos.Actor import Actor
+from algos.Actor import Actor
 import torch
 from collections import deque
 from torch.distributions import Categorical

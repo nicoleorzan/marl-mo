@@ -1,10 +1,10 @@
-from src.environments import mo_epgg_v0 
-from src.algos.MOReinforce_SER_new import MOReinforce
+from environments import mo_epgg_v0 
+from algos.MOReinforce_SER_new import MOReinforce
 import numpy as np
 import torch
 import wandb
-from src.utils.utils import pick_agents_idxs, introspective_rewards
-from src.experiments.params import setup_training_hyperparams
+from utils.utils import pick_agents_idxs, introspective_rewards
+from experiments.params import setup_training_hyperparams
 
 torch.autograd.set_detect_anomaly(True)
 

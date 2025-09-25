@@ -1,9 +1,10 @@
+import os, sys
 import argparse
 import numpy as np
-from src.experiments.train_reinforce_ser import train_reinforce
-from src.experiments.train_ac import train_ac
-from src.experiments.train_q_learning import train_q_learning
-from src.experiments.train_dqn import train_dqn
+from experiments.train_reinforce_ser import train_reinforce
+from experiments.train_ac import train_ac
+from experiments.train_q_learning import train_q_learning
+from experiments.train_dqn import train_dqn
 
 def non_increasing(L):
     return all(x>y for x, y in zip(L, L[1:]))
@@ -11,22 +12,17 @@ def non_increasing(L):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--n_agents', type=int)
+    parser.add_argument('--n_agents', type=int, default=2)
     parser.add_argument(
         "--mult_fact",
         nargs="*",
         type=float,
-        default=[1.5])
+        default=[0.5, 1.5, 2.5])
     parser.add_argument( # to fill with values of uncertainties for every agent (can be 0.)
         "--uncertainties",
         nargs="*",
         type=float,
-        default=[])
-    """parser.add_argument( # to fill with values of betas for every agent (can be 0.)
-        "--betas",
-        nargs="*",
-        type=float,
-        default=[])"""
+        default=[0, 0])
         
     parser.add_argument('--optuna_', type=int, default=0)
     parser.add_argument('--num_epochs', type=int, default=50000) # sarebbe total_steps
@@ -48,7 +44,7 @@ if __name__ == '__main__':
     parser.add_argument('--old_actions_in_input', type=int, choices = [0, 1], default=1) # 1 for true 0 for false
     parser.add_argument('--mf_from_interval', type=int, choices = [0, 1], default=0) # 1 for true 0 for false
     parser.add_argument('--scalarization_function', type=str, choices = ["linear", "ggf", "non-linear-pgg", "sigmoid"], default="linear")
-    parser.add_argument('--print_step', type=int, default=20)
+    parser.add_argument('--print_step', type=int, default=100)
     parser.add_argument('--epsilon_dqn', type=float, default=0.01)
     parser.add_argument('--c_value', type=float, default=0.)
     parser.add_argument('--lr_dqn', type=float, default=0.001)
@@ -59,7 +55,7 @@ if __name__ == '__main__':
         "--weights",
         nargs="*",
         type=float,
-        default=[])
+        default=[1.])
     
     parser.add_argument( # to fill with values of weights for every objective (can be 0.)
         "--p_weights",

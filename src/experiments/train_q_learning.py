@@ -1,15 +1,15 @@
-from src.environments import mo_epgg_v0
-from src.algos.Q_learning import Q_learning_agent
+from environments import mo_epgg_v0
+from algos.Q_learning import Q_learning_agent
 import numpy as np
 import optuna
 from optuna.trial import TrialState
 import torch
 from optuna.storages import JournalStorage, JournalFileStorage
 import wandb
-from src.algos.normativeagent import NormativeAgent
-from src.utils.social_norm import SocialNorm
-from src.utils.utils import pick_agents_idxs_two_agents, introspective_rewards
-from src.experiments.params import setup_training_hyperparams
+from algos.normativeagent import NormativeAgent
+from utils.social_norm import SocialNorm
+from utils.utils import pick_agents_idxs_two_agents, introspective_rewards
+from experiments.params import setup_training_hyperparams
 
 torch.autograd.set_detect_anomaly(True)
 

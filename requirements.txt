@@ -1,6 +1,6 @@
 gym==0.24.1
 pettingzoo==1.23.1
-supersuit==3.9.0
+supersuit
 matplotlib
 wandb
 scikit-learn

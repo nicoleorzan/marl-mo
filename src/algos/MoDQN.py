@@ -1,4 +1,4 @@
-from src.algos.Actor import Actor
+from algos.Actor import Actor
 import copy
 import torch
 import random
