@@ -233,7 +233,7 @@ def objective(args, repo_name, trial=None):
                 step=epoch, commit=True)
 
         if (epoch%config.print_step == 0):
-            print("\nEpoch : {} \t Measure: {} ".format(epoch, measure))
+            print("\nEpoch : {} \t Avg Reward in Time: {} ".format(epoch, measure))
             print("avg_rew=", {ag_idx:avg_i for ag_idx, avg_i in avg_rew.items()})
             print("coop_agents_mf=",coop_agents_mf)
             print("dff_coop_per_mf=",dff_coop_per_mf)

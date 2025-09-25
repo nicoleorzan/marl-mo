@@ -17,12 +17,7 @@ if __name__ == '__main__':
         "--mult_fact",
         nargs="*",
         type=float,
-        default=[0.5, 1.5, 2.5])
-    parser.add_argument( # to fill with values of uncertainties for every agent (can be 0.)
-        "--uncertainties",
-        nargs="*",
-        type=float,
-        default=[0, 0])
+        default=[3.5, 8.5])
         
     parser.add_argument('--optuna_', type=int, default=0)
     parser.add_argument('--num_epochs', type=int, default=50000) # sarebbe total_steps
@@ -37,14 +32,14 @@ if __name__ == '__main__':
     parser.add_argument('--wandb_mode', type=str, choices = ["online", "offline"], default="offline")
     parser.add_argument('--dqn_activation_function', type=str, choices = ["tanh", "relu"], default="tanh")
     parser.add_argument('--rule', type=str, choices = ["rule09", "rule11", "rule03", "rule00"], default="rule09")
-    parser.add_argument('--algorithm', type=str, choices = ["reinforce", "ppo", "dqn", "q-learning", "actor-critic"], default="reinforce")
+    parser.add_argument('--algorithm', type=str, choices = ["reinforce", "ppo", "dqn", "q-learning", "actor-critic"], default="dqn")
     parser.add_argument('--optimize', type=int, choices = [0, 1], default=0) # 1 for true 0 for false
     parser.add_argument('--introspective', type=int, choices = [0, 1], default=0) # 1 for true 0 for false
     parser.add_argument('--reputation_assignment', type=int, choices = [0, 1], default=0) # 1 for true 0 for false
     parser.add_argument('--old_actions_in_input', type=int, choices = [0, 1], default=1) # 1 for true 0 for false
     parser.add_argument('--mf_from_interval', type=int, choices = [0, 1], default=0) # 1 for true 0 for false
     parser.add_argument('--scalarization_function', type=str, choices = ["linear", "ggf", "non-linear-pgg", "sigmoid"], default="linear")
-    parser.add_argument('--print_step', type=int, default=100)
+    parser.add_argument('--print_step', type=int, default=200)
     parser.add_argument('--epsilon_dqn', type=float, default=0.01)
     parser.add_argument('--c_value', type=float, default=0.)
     parser.add_argument('--lr_dqn', type=float, default=0.001)
@@ -55,13 +50,19 @@ if __name__ == '__main__':
         "--weights",
         nargs="*",
         type=float,
-        default=[1.])
+        default=[0.5, 0.5])
     
     parser.add_argument( # to fill with values of weights for every objective (can be 0.)
         "--p_weights",
         nargs="*",
         type=float,
         default=[])
+    
+    parser.add_argument( # to fill with values of uncertainties for every agent (can be 0.)
+        "--uncertainties",
+        nargs="*",
+        type=float,
+        default=[0, 0])
 
     args = parser.parse_args()
     n_certain_agents = args.uncertainties.count(0.)

@@ -92,7 +92,7 @@ class MoDQN():
         elif (self.scalarization_function == "sigmoid"):
             self.scal_func = self.sigmoid
 
-        self._print = True
+        self._print = False
 
         if (self.betas_from_distrib):
             d = normal.Normal(1., self.sigma_beta)
@@ -101,7 +101,7 @@ class MoDQN():
             #    self.beta = -self.beta          
         else:
             self.beta = self.betas[self.idx]
-        print("beta=", self.beta)
+        #print("beta=", self.beta)
 
         self.reset()
 
@@ -264,11 +264,13 @@ class MoDQN():
                 print("expected_q_values=",expected_q_values.shape)
 
         diff = (expected_q_values - current_q_values)
-        print("diff=", diff.shape)
         loss = self.MSE(diff)
-        print("mse loss=", loss.shape)
         loss = loss.mean()
-        print("loss=", loss.shape)
+
+        if (self._print == True and self.idx == 0):
+            print("diff=", diff.shape)
+            print("mse loss=", loss.shape)
+            print("loss=", loss.shape)
 
         return loss
 
@@ -299,8 +301,11 @@ class MoDQN():
         self.update_count += 1
         self.update_count = self.update_count % self.target_net_update_freq
         if self.update_count == 0:
-            print("updating target model")
             self.policy_act_target.load_state_dict(self.policy_act.state_dict())
+
+            if (self._print == True and self.idx == 0):
+                print("updating target model")
+            
 
     def get_max_next_state_action(self, next_states):
         next_vals = self.policy_act_target.get_values(state=next_states).view(self.batch_size, self.num_objectives,self.action_size) ##.act(state=next_states, greedy=False, get_distrib=True)
