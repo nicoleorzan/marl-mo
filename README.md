@@ -1,4 +1,4 @@
-# Multi-Objective Multi-Agent Reinforcement Learning  (EPGG)
+# Multi-Objective Multi-Agent Reinforcement Learning in Public Goods Games
 
 **Paper:** *Learning in Multi-Objective Public Goods Games with Non-Linear Utilities* (ECAI 2024)  
 Authors: Nicole Orzan, Erman Acar, Davide Grossi, Roxana Rădulescu  
