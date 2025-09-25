@@ -3,7 +3,6 @@ import argparse
 import numpy as np
 from experiments.train_reinforce_ser import train_reinforce
 from experiments.train_ac import train_ac
-from experiments.train_q_learning import train_q_learning
 from experiments.train_dqn import train_dqn
 
 def non_increasing(L):
@@ -32,7 +31,7 @@ if __name__ == '__main__':
     parser.add_argument('--wandb_mode', type=str, choices = ["online", "offline"], default="offline")
     parser.add_argument('--dqn_activation_function', type=str, choices = ["tanh", "relu"], default="tanh")
     parser.add_argument('--rule', type=str, choices = ["rule09", "rule11", "rule03", "rule00"], default="rule09")
-    parser.add_argument('--algorithm', type=str, choices = ["reinforce", "dqn", "q-learning", "actor-critic"], default="dqn")
+    parser.add_argument('--algorithm', type=str, choices = ["reinforce", "dqn", "actor-critic"], default="dqn")
     parser.add_argument('--optimize', type=int, choices = [0, 1], default=0) # 1 for true 0 for false
     parser.add_argument('--introspective', type=int, choices = [0, 1], default=0) # 1 for true 0 for false
     parser.add_argument('--reputation_assignment', type=int, choices = [0, 1], default=0) # 1 for true 0 for false
@@ -50,7 +49,7 @@ if __name__ == '__main__':
         "--weights",
         nargs="*",
         type=float,
-        default=[0.5, 0.5])
+        default=[1.])
     
     parser.add_argument( # to fill with values of weights for every objective (can be 0.)
         "--p_weights",
@@ -104,6 +103,4 @@ if __name__ == '__main__':
         train_reinforce(args)   
     elif args.algorithm == "actor-critic":
         print("calling actor-critic algorithm")
-        train_ac(args)    
-    elif args.algorithm == "q-learning":
-        train_q_learning(args)
+        train_ac(args)
