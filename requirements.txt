@@ -5,4 +5,6 @@ matplotlib
 wandb
 scikit-learn
 pandas
+seaborn
 optuna
+ramo

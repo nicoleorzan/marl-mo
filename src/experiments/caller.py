@@ -32,7 +32,7 @@ if __name__ == '__main__':
     parser.add_argument('--wandb_mode', type=str, choices = ["online", "offline"], default="offline")
     parser.add_argument('--dqn_activation_function', type=str, choices = ["tanh", "relu"], default="tanh")
     parser.add_argument('--rule', type=str, choices = ["rule09", "rule11", "rule03", "rule00"], default="rule09")
-    parser.add_argument('--algorithm', type=str, choices = ["reinforce", "ppo", "dqn", "q-learning", "actor-critic"], default="dqn")
+    parser.add_argument('--algorithm', type=str, choices = ["reinforce", "dqn", "q-learning", "actor-critic"], default="dqn")
     parser.add_argument('--optimize', type=int, choices = [0, 1], default=0) # 1 for true 0 for false
     parser.add_argument('--introspective', type=int, choices = [0, 1], default=0) # 1 for true 0 for false
     parser.add_argument('--reputation_assignment', type=int, choices = [0, 1], default=0) # 1 for true 0 for false

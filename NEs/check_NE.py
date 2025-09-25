@@ -7,6 +7,7 @@ from ramo.nash.IBR import iterated_best_response
 from ramo.nash.verify import verify_nash
 from ramo.pareto.pareto_nash import pure_strategy_pne
 import matplotlib.pyplot as plt
+import os
 
 from utils import u_beta
 from ramo.nash.verify import verify_nash
@@ -181,8 +182,8 @@ def plots_probability_of_cooperation(_file):
         ax[_if].set_xlabel(r'$\beta$', fontsize=20)
         fig.text(0, 0.5, 'Probability of Cooperation', fontsize=18, va='center', rotation='vertical')
         filename = "poc_agent"+str(i)+".png"
-        fig.savefig("results/"+filename, bbox_inches="tight")
-        print("Saved plot for agent", i, "in results/"+filename)
+        fig.savefig("results/plots/"+filename, bbox_inches="tight")
+        print("Saved plot for agent", i, "in results/plots/"+filename)
 
 def plots_poa(_file):
 
@@ -266,9 +267,9 @@ def plots_poa(_file):
         ax.legend(title="f values",fontsize='x-large',bbox_to_anchor=(1.0, 0.8))#,ncol=len(df.columns))
     ax.set_xlabel(r'$\beta$', fontsize=19)
     ax.set_ylabel("Price of Anarchy", fontsize=19)
-    fig.savefig("results/poa.png", bbox_inches="tight")
+    fig.savefig("results/plots/poa.png", bbox_inches="tight")
 
-    print("Saved plot for the Price of Anarchy in results/poa.png")
+    print("Saved plot for the Price of Anarchy in results/plots/poa.png")
 
 if __name__ == "__main__":
     
@@ -276,6 +277,8 @@ if __name__ == "__main__":
     #find_nashes("results/data.csv")
 
     # Make plot for the Probability of Cooperation for each agent, given a set of f values and betas (from file)
+    os.makedirs("results/plots", exist_ok=True)
+
     plots_probability_of_cooperation("results/data.csv")
 
     # Make plot for the Price of Anarchy of the system, given a set of f values and betas (from file)
