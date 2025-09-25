@@ -1,4 +1,4 @@
-# Multi-Objective Multi-Agent Reinforcement Learning  (EPGG)
+# Multi-Objective Multi-Agent Reinforcement Learning in Public Goods Games
 
 **Paper:** *Learning in Multi-Objective Public Goods Games with Non-Linear Utilities* (ECAI 2024)  
 Authors: Nicole Orzan, Erman Acar, Davide Grossi, Roxana Rădulescu  
@@ -31,7 +31,7 @@ This defaults to running a 2-agents 2-objectives MO-EPGG, with MO-deep-Q Learnin
 For a custom run, you can give:
 
 ```
-python3 caller.py --n_agents 4 --
+python3 caller.py --n_agents 4 
 ```
 
 ### Citing
