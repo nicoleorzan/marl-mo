@@ -8,9 +8,22 @@ Authors: Nicole Orzan, Erman Acar, Davide Grossi, Roxana Rădulescu
 
 ### TL;DR (paper, in a few lines)
 
-- We introduce MO-EPGG, a **multi-objective** version of the Extended Public Goods Game that separates **individual vs collective payoffs**.
-- Each agent uses a non-linear utility (risk preference) over the payoff vector, and we study how this interacts with incentive-alignment uncertainty. 
-- With MORL we show regimes where preferences + uncertainty promote or suppress cooperation even in mixed-motive settings. 
+- We introduce MO-EPGG, a **multi-objective** version of the **Extended Public Goods Game** (introduced in [this](https://link.springer.com/article/10.1007/s00521-024-10530-6) paper).
+- Agent optimize toward an **individual** and a **collective** payoff
+- Each agent uses a **non-linear** utility function (risk preference) over the payoff vector, and we study how this interacts with uncertainty over the incentive-alignment. 
+- Using Multi-Objective Reinforcement Learning we show regimes where preferences + uncertainty promote or suppress cooperation even in mixed-motive settings. 
+
+### Repository layout
+
+- [`/NEs`](NEs) Code that computes Nash Equilibria of the EPGG under the SER optimisation criteria + plotting functions
+- [`/src`](src) Souce Code that trains single and multi-objective deep RL agents
+    - [`/algos`](algos) Implementation of **MO-DQN** (SER), **MO-Actor Critic** (SER), **MO-Reinforce** (SER and ESR), single-objective **DQN** and single-objective **Reinforce**
+    - [`/experiments`](experiments) Training loops and training instantiation function (caller.py)
+    - [`/environments`](environments) MO-EPGG implementation
+    - [`/utils`](utils) helper functions for the game
+- requirements.txt # Python dependencies
+- setup.py # Editable install for development
+- README.md
 
 ### Example Install
 
@@ -21,7 +34,7 @@ pip install -e .
 pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
 ```
 
-To launch a trial run, in `src/experiments/` give the comman:
+To launch a **trial run**, in `src/experiments/` give the comman:
 
 ```
 python3 caller.py
